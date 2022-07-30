@@ -54,12 +54,12 @@ class BaseSocket:
     def run(self):
         while True:
             clientsocket, addr = self.serversocket.accept()
-            print("[Info] Connect: %s" % str(addr))
+            print(f"[Info] Connect: {str(addr)}")
             self.disconnect = False
             while True:
                 flag, l = self.recvLine(clientsocket)
                 if not flag:
-                    print("[Info] Disonnect: %s" % str(addr))
+                    print(f"[Info] Disonnect: {str(addr)}")
                     self.disconnect = True
                     break
                 data = self.recvAll(clientsocket, l)

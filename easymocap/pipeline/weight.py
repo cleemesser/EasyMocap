@@ -65,9 +65,7 @@ def load_weight_pose2d(model, opts):
             'init_poses': 1e-3, 'init_shapes': 1e-2,
             'smooth_body': 5e-1, 'smooth_poses': 1e-1,
         }
-    elif model == 'smplh':
-        raise NotImplementedError
-    elif model == 'smplx':
+    elif model in ['smplh', 'smplx']:
         raise NotImplementedError
     else:
         weight = {}

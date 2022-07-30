@@ -43,7 +43,7 @@ def run_eval_keypoints(inp, out, type_i, type_o, step_gt, mode='single', args=No
     conversion = Conversion(type_i, type_o)
     inplists = sorted(glob(join(inp, '*.json')))[::step_gt]
     outlists = sorted(glob(join(out, '*.json')))[args.start:args.end]
-    assert len(inplists) == len(outlists), '{} != {}'.format(len(inplists), len(outlists))
+    assert len(inplists) == len(outlists), f'{len(inplists)} != {len(outlists)}'
     results = []
     for nf, inpname in enumerate(tqdm(inplists)):
         outname = outlists[nf]
@@ -59,12 +59,7 @@ def run_eval_keypoints(inp, out, type_i, type_o, step_gt, mode='single', args=No
             if est['keypoints3d'].shape[1] == 3:
                 est['keypoints3d'] = np.hstack([est['keypoints3d'], np.ones((est['keypoints3d'].shape[0], 1))])
         # 这一步将交换est的顺序
-        if mode == 'single':
-            # 单人的：直接匹配上
-            pass
-        elif mode == 'matched': # ID已经匹配过了
-            pass 
-        else: # 进行匹配
+        if mode not in ['single', 'matched']:
             # 把估计的id都清空
             for est in ests:
                 est['id'] = -1
@@ -91,20 +86,6 @@ def run_eval_keypoints(inp, out, type_i, type_o, step_gt, mode='single', args=No
             results.append(result)
     write_to_csv(join(out, '..', 'report.csv'), results)
     return 0
-    keys = list(results[list(results.keys())[0]][0].keys())
-    reports = {}
-    for pid, result in results.items():
-        vals = {key: sum([res[key] for res in result])/len(result) for key in keys}
-        reports[pid] = vals
-    from tabulate import tabulate
-    headers = [''] + keys
-    table = []
-    for pid, report in reports.items():
-        res = ['{}'.format(pid)] + ['{:.2f}'.format(report[key]) for key in keys]
-        table.append(res)
-    savename = 'tmp.txt'
-    print(tabulate(table, headers, tablefmt='fancy_grid'))
-    print(tabulate(table, headers, tablefmt='fancy_grid'), file=open(savename, 'w'))
 
 def write_to_csv(filename, results):
     from tabulate import tabulate
@@ -113,24 +94,21 @@ def write_to_csv(filename, results):
     for key in keys:
         if isinstance(results[0][key], float):
             headers.append(key)
-            table.append('{:.3f}'.format(sum([res[key] for res in results])/len(results)))
-    print('>> Totally {} samples:'.format(len(results)))
+            table.append('{:.3f}'.format(sum(res[key] for res in results) / len(results)))
+    print(f'>> Totally {len(results)} samples:')
     print(tabulate([table], headers, tablefmt='fancy_grid'))
     with open(filename, 'w') as f:
         # 写入头
         header = list(results[0].keys())
         f.write(','.join(header) + '\n')
         for res in results:
-            f.write(','.join(['{}'.format(res[key]) for key in header]) + '\n')
+            f.write(','.join([f'{res[key]}' for key in header]) + '\n')
 
 def run_eval_keypoints_mono(inp, out, type_i, type_o, type_e, step_gt, cam_path, mode='single'):
     conversion = Conversion(type_i, type_o, type_e)
     inplists = sorted(glob(join(inp, '*.json')))[::step_gt]
     # TODO:only evaluate a subset of views
-    if len(args.sub) == 0:
-        views = sorted(os.listdir(out))
-    else:
-        views = args.sub
+    views = sorted(os.listdir(out)) if len(args.sub) == 0 else args.sub
     # read camera
     cameras = read_camera(join(cam_path, 'intri.yml'), join(cam_path, 'extri.yml'), views)
     cameras = {key:cameras[key] for key in views}

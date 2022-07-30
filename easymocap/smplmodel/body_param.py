@@ -9,18 +9,18 @@ import numpy as np
 from os.path import join
 
 def merge_params(param_list, share_shape=True):
-    output = {}
-    for key in ['poses', 'shapes', 'Rh', 'Th', 'expression']:
-        if key in param_list[0].keys():
-            output[key] = np.vstack([v[key] for v in param_list])
+    output = {
+        key: np.vstack([v[key] for v in param_list])
+        for key in ['poses', 'shapes', 'Rh', 'Th', 'expression']
+        if key in param_list[0].keys()
+    }
+
     if share_shape:
         output['shapes'] = output['shapes'].mean(axis=0, keepdims=True)
     return output
 
 def select_nf(params_all, nf):
-    output = {}
-    for key in ['poses', 'Rh', 'Th']:
-        output[key] = params_all[key][nf:nf+1, :]
+    output = {key: params_all[key][nf:nf+1, :] for key in ['poses', 'Rh', 'Th']}
     if 'expression' in params_all.keys():
         output['expression'] = params_all['expression'][nf:nf+1, :]
     if params_all['shapes'].shape[0] == 1:
@@ -52,12 +52,26 @@ def load_model(gender='neutral', use_cuda=True, model_type='smpl', skel_type='bo
         body_model = SMPLlayer(join(model_path, 'smplh/SMPLH_MALE.pkl'), model_type='smplh', gender=gender, device=device,
             regressor_path=join(model_path, 'J_regressor_body25_smplh.txt'))
     elif model_type == 'smplx':
-        body_model = SMPLlayer(join(model_path, 'smplx/SMPLX_{}.pkl'.format(gender.upper())), model_type='smplx', gender=gender, device=device,
-            regressor_path=join(model_path, 'J_regressor_body25_smplx.txt'))
-    elif model_type == 'manol' or model_type == 'manor':
+        body_model = SMPLlayer(
+            join(model_path, f'smplx/SMPLX_{gender.upper()}.pkl'),
+            model_type='smplx',
+            gender=gender,
+            device=device,
+            regressor_path=join(model_path, 'J_regressor_body25_smplx.txt'),
+        )
+
+    elif model_type in ['manol', 'manor']:
         lr = {'manol': 'LEFT', 'manor': 'RIGHT'}
-        body_model = SMPLlayer(join(model_path, 'smplh/MANO_{}.pkl'.format(lr[model_type])), model_type='mano', gender=gender, device=device,
-            regressor_path=join(model_path, 'J_regressor_mano_{}.txt'.format(lr[model_type])))
+        body_model = SMPLlayer(
+            join(model_path, f'smplh/MANO_{lr[model_type]}.pkl'),
+            model_type='mano',
+            gender=gender,
+            device=device,
+            regressor_path=join(
+                model_path, f'J_regressor_mano_{lr[model_type]}.txt'
+            ),
+        )
+
     else:
         body_model = None
     body_model.to(device)

@@ -80,7 +80,7 @@ class ImageFolder:
     def load_gt_cameras(self):
         cameras = load_cameras(self.root)
         gtCameras = []
-        for i, name in enumerate(self.annotlist):
+        for name in self.annotlist:
             cam = os.path.dirname(name)
             gtcams = {key:cameras[cam][key].copy() for key in ['K', 'R', 'T', 'dist']}
             gtCameras.append(gtcams)
@@ -93,11 +93,12 @@ class ImageFolder:
         imgname = join(self.image_root, self.imagelist[index])
         annname = join(self.annot_root, self.annotlist[index])
         assert os.path.exists(imgname) and os.path.exists(annname), (imgname, annname)
-        assert os.path.basename(imgname).split('.')[0] == os.path.basename(annname).split('.')[0], '{}, {}'.format(imgname, annname)
-        if not self.no_img:
-            img = cv2.imread(imgname)
-        else:
-            img = None
+        assert (
+            os.path.basename(imgname).split('.')[0]
+            == os.path.basename(annname).split('.')[0]
+        ), f'{imgname}, {annname}'
+
+        img = None if self.no_img else cv2.imread(imgname)
         annot = read_annot(annname, self.kpts_type)
         return img, annot
     
@@ -127,19 +128,19 @@ class ImageFolder:
         return self.annotlist[nf].replace('.json', '')
 
     def write_keypoints3d(self, results, nf):
-        outname = join(self.out, 'keypoints3d', '{}.json'.format(self.basename(nf)))
+        outname = join(self.out, 'keypoints3d', f'{self.basename(nf)}.json')
         self.writer.write_keypoints3d(results, outname)
     
     def write_vertices(self, results, nf):
-        outname = join(self.out, 'vertices', '{}.json'.format(self.basename(nf)))
+        outname = join(self.out, 'vertices', f'{self.basename(nf)}.json')
         self.writer.write_vertices(results, outname)
         
     def write_smpl(self, results, nf):
-        outname = join(self.out, 'smpl', '{}.json'.format(self.basename(nf)))
+        outname = join(self.out, 'smpl', f'{self.basename(nf)}.json')
         self.writer.write_smpl(results, outname)
 
     def vis_smpl(self, render_data, image, camera, nf):
-        outname = join(self.out, 'smpl', '{}.jpg'.format(self.basename(nf)))
+        outname = join(self.out, 'smpl', f'{self.basename(nf)}.jpg')
         images = [image]
         for key in camera.keys():
             camera[key] = camera[key][None, :, :]
@@ -163,7 +164,7 @@ class ImageFolder:
 
     def load_annot_all(self, path):
         # 这个不使用personID，只是单纯的罗列一下
-        assert os.path.exists(path), '{} not exists!'.format(path)
+        assert os.path.exists(path), f'{path} not exists!'
         results = []
         annnames = sorted(glob(join(path, '*.json')))
         for annname in annnames:
@@ -183,7 +184,7 @@ class ImageFolder:
 
     def load_annot(self, path, pids=[]):
         # 这个根据人的ID预先存一下
-        assert os.path.exists(path), '{} not exists!'.format(path)
+        assert os.path.exists(path), f'{path} not exists!'
         results = {}
         annnames = sorted(glob(join(path, '*.json')))
         for annname in annnames:
@@ -198,7 +199,7 @@ class ImageFolder:
                     results[pid] = {'bboxes': [], 'keypoints2d': []}
                 results[pid]['bboxes'].append(data['bbox'])
                 results[pid]['keypoints2d'].append(data['keypoints'])
-        for pid, val in results.items():
+        for val in results.values():
             for key in val.keys():
                 val[key] = np.stack(val[key])
         return results
@@ -210,7 +211,7 @@ class ImageFolder:
             path (str): root path of smpl
             pids (list, optional): used person ids. Defaults to [], loading all person.
         """
-        assert os.path.exists(path), '{} not exists!'.format(path)
+        assert os.path.exists(path), f'{path} not exists!'
         results = {}
         smplnames = sorted(glob(join(path, '*.json')))
         for smplname in smplnames:
@@ -225,7 +226,7 @@ class ImageFolder:
                     results[pid] = {'body_params': [], 'frames': []}
                 results[pid]['body_params'].append(data)
                 results[pid]['frames'].append(nf)
-        for pid, val in results.items():
+        for val in results.values():
             val['body_params'] = merge_params(val['body_params'])
         return results
 
@@ -264,11 +265,12 @@ class _VideoBase:
         imgname = join(self.image_root, self.imagelist[index])
         annname = join(self.annot_root, self.annotlist[index])
         assert os.path.exists(imgname) and os.path.exists(annname)
-        assert os.path.basename(imgname).split('.')[0] == os.path.basename(annname).split('.')[0], '{}, {}'.format(imgname, annname)
-        if not self.no_img:
-            img = cv2.imread(imgname)
-        else:
-            img = None
+        assert (
+            os.path.basename(imgname).split('.')[0]
+            == os.path.basename(annname).split('.')[0]
+        ), f'{imgname}, {annname}'
+
+        img = None if self.no_img else cv2.imread(imgname)
         annot = read_annot(annname, self.kpts_type)
         return img, annot
     
@@ -279,7 +281,7 @@ class _VideoBase:
         results = []
         for pid, people in peopleDict.items():
             result = {'id': pid}
-            result.update(people.body_params)
+            result |= people.body_params
             results.append(result)
         self.writer.write_smpl(results, nf)
     
@@ -309,11 +311,16 @@ class _VideoBase:
         # 通过修改相机参数实现
         # 相机参数的修正可以通过计算点的中心来获得
         # render the smpl to each view
-        render_data = {}
-        for pid, data in peopleDict.items():
-            render_data[pid] = {
-                'vertices': data.vertices, 'faces': faces, 
-                'vid': pid, 'name': 'human_{}_{}'.format(nf, pid)}
+        render_data = {
+            pid: {
+                'vertices': data.vertices,
+                'faces': faces,
+                'vid': pid,
+                'name': f'human_{nf}_{pid}',
+            }
+            for pid, data in peopleDict.items()
+        }
+
         for iid, extra in enumerate(extra_data):
             render_data[10000+iid] = {
                 'vertices': extra['vertices'],
@@ -321,9 +328,7 @@ class _VideoBase:
                 'colors': extra['colors'],
                 'name': extra['name']
             }
-        camera = {}
-        for key in self.camera.keys():
-            camera[key] = self.camera[key][None, :, :]
+        camera = {key: self.camera[key][None, :, :] for key in self.camera.keys()}
         # render another view point
         if np.abs(degree) > 1e-3:
             vertices_all = np.vstack([data.vertices for data in peopleDict.values()])
@@ -403,7 +408,7 @@ class MVBase:
                 self.has2d = True
             else:
                 self.has2d = False
-        nFrames = min([len(val) for key, val in self.imagelist.items()])
+        nFrames = min(len(val) for key, val in self.imagelist.items())
         self.nFrames = nFrames
         self.nViews = len(cams)
         self.read_camera(self.root)
@@ -461,7 +466,8 @@ class MVBase:
                 bbox = data['bbox']
                 keypoints = data['keypoints']
             else:
-                if self.verbose:print('not found pid {} in frame {}, view {}'.format(self.pid, index, nv))
+                if self.verbose:
+                    print(f'not found pid {self.pid} in frame {index}, view {nv}')
                 keypoints = np.zeros((self.config['nJoints'], 3))
                 bbox = np.array([0, 0, 100., 100., 0.])
             annots['bbox'].append(bbox)
@@ -489,10 +495,7 @@ class MVBase:
                 img = None
                 images.append(None)
             if self.filter2d is not None:
-                annot_valid = []
-                for ann in annot:
-                    if self.filter2d(**ann):
-                        annot_valid.append(ann)
+                annot_valid = [ann for ann in annot if self.filter2d(**ann)]
                 annot = annot_valid
                 annot = self.filter2d.nms(annot)
             if self.ret_crop:
@@ -524,37 +527,44 @@ class MVBase:
             outname = join(self.out, 'keypoints2d', cam, self.annotlist[cam][nf])
             annot_origin = read_json(annname)
             annots = lDetections[nv]
-            results = []
-            for annot in annots:
-                results.append({
+            results = [
+                {
                     'personID': annot['id'],
                     'bbox': numpy_to_list(annot['bbox'], 2),
-                    'keypoints': numpy_to_list(annot['keypoints'], 2)
-                })
+                    'keypoints': numpy_to_list(annot['keypoints'], 2),
+                }
+                for annot in annots
+            ]
+
             annot_origin['annots'] = results
             save_annot(outname, annot_origin)
 
     def write_keypoints3d(self, results, nf):
-        outname = join(self.out, 'keypoints3d', self.basename(nf)+'.json')
+        outname = join(self.out, 'keypoints3d', f'{self.basename(nf)}.json')
         self.writer.write_keypoints3d(results, outname)
 
     def write_vertices(self, results, nf):
-        outname = join(self.out, 'vertices', '{}.json'.format(self.basename(nf)))
+        outname = join(self.out, 'vertices', f'{self.basename(nf)}.json')
         self.writer.write_vertices(results, outname)
 
     def write_smpl(self, results, nf, mode='smpl'):
-        outname = join(self.out, mode, self.basename(nf)+'.json')
+        outname = join(self.out, mode, f'{self.basename(nf)}.json')
         self.writer.write_smpl(results, outname)
 
     def vis_smpl(self, peopleDict, faces, images, nf, sub_vis=[], 
         mode='smpl', extra_data=[], extra_mesh=[], 
         add_back=True, camera_scale=1, cameras=None):
         # render the smpl to each view
-        render_data = {}
-        for pid, data in peopleDict.items():
-            render_data[pid] = {
-                'vertices': data.vertices, 'faces': faces, 
-                'vid': pid, 'name': 'human_{}_{}'.format(nf, pid)}
+        render_data = {
+            pid: {
+                'vertices': data.vertices,
+                'faces': faces,
+                'vid': pid,
+                'name': f'human_{nf}_{pid}',
+            }
+            for pid, data in peopleDict.items()
+        }
+
         for iid, extra in enumerate(extra_data):
             render_data[10000+iid] = {
                 'vertices': extra['vertices'],
@@ -565,33 +575,19 @@ class MVBase:
                 render_data[10000+iid]['colors'] = extra['colors']
             elif 'vid' in extra.keys():
                 render_data[10000+iid]['vid'] = extra['vid']
-            
+
         if len(sub_vis) == 0:
             sub_vis = self.cams
 
         images = [images[self.cams.index(cam)] for cam in sub_vis]
         if cameras is None:
             cameras = {'K': [], 'R':[], 'T':[]}
-            for key in cameras.keys():
+            for key in cameras:
                 cameras[key] = [self.cameras[cam][key] for cam in sub_vis]
         for key in cameras.keys():
             cameras[key] = np.stack([self.cameras[cam][key] for cam in sub_vis])
-        # 根据camera_back参数，控制相机向后退的距离
-        # 相机的光心的位置: -R.T @ T
-        if False:
-            R = cameras['R']
-            T = cameras['T']
-            cam_center = np.einsum('bij,bjk->bik', -R.transpose(0, 2, 1), T)
-            # 相机的朝向: R @ [0, 0, 1]
-            zdir = np.array([0., 0., 1.]).reshape(-1, 3, 1)
-            direction = np.einsum('bij,bjk->bik', R, zdir)
-            cam_center = cam_center - direction * 1
-            # 更新过后的相机的T: - R @ C
-            Tnew = - np.einsum('bij,bjk->bik', R, cam_center)
-            cameras['T'] = Tnew
-        else:
-            cameras['K'][:, 0, 0] /= camera_scale
-            cameras['K'][:, 1, 1] /= camera_scale
+        cameras['K'][:, 0, 0] /= camera_scale
+        cameras['K'][:, 1, 1] /= camera_scale
         return self.writer.vis_smpl(render_data, nf, images, cameras, mode, add_back=add_back, extra_mesh=extra_mesh)
 
     def read_skeleton(self, start, end):
@@ -600,7 +596,10 @@ class MVBase:
             skelname = join(self.out, 'keypoints3d', '{:06d}.json'.format(nf))
             skeletons = read_keypoints3d(skelname)
             skeleton = [i for i in skeletons if i['id'] == self.pid]
-            assert len(skeleton) == 1, 'There must be only 1 keypoints3d, id = {} in {}'.format(self.pid, skelname)
+            assert (
+                len(skeleton) == 1
+            ), f'There must be only 1 keypoints3d, id = {self.pid} in {skelname}'
+
             keypoints3ds.append(skeleton[0]['keypoints3d'])
         keypoints3ds = np.stack(keypoints3ds)
         return keypoints3ds
@@ -610,7 +609,7 @@ class MVBase:
             path = self.skel_path
             assert path is not None, 'please set the skeleton path'
         if mode == 'a4d':
-            outname = join(path, '{}.txt'.format(nf))
+            outname = join(path, f'{nf}.txt')
             assert os.path.exists(outname), outname
             skels = readReasultsTxt(outname)
         elif mode == 'none':

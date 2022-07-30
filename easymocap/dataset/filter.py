@@ -19,7 +19,7 @@ class CritMinJoints(BaseCrit):
         return (keypoints[:, 2] > 0.).sum() > self.min_joints
     
     def __str__(self) -> str:
-        return "remove the detections less than {} joints".format(self.min_joints)
+        return f"remove the detections less than {self.min_joints} joints"
 
 class CritWithTorso(BaseCrit):
     def __init__(self, torso_idx, min_conf, log, **kwargs) -> None:
@@ -31,7 +31,7 @@ class CritWithTorso(BaseCrit):
         return (keypoints[self.idx, 2] > self.min_conf).all()
     
     def __str__(self) -> str:
-        return "remove the human without torso {}".format(self.idx)
+        return f"remove the human without torso {self.idx}"
 
 class CritNoBorder(BaseCrit):
     def __init__(self, rate, height, width, log) -> None:
@@ -44,20 +44,16 @@ class CritNoBorder(BaseCrit):
 
     def __call__(self, keypoints, bbox, **kwargs) -> bool:
         l, t, r, b, c = bbox[:5]
-        if t < self.border: # 跳过上面部分被截掉的
-            pass
         if l < self.border or r > self.width - self.border:
-            if self.log:print('[Crit2d]: {}'.format(' '.join(['%8.3f'%(i) for i in bbox])))
+            if self.log:
+                print(f"[Crit2d]: {' '.join(['%8.3f'%(i) for i in bbox])}")
             if self.log:print('[Error] Left or right')
             dist = np.linalg.norm(keypoints[self.leftidx, :2] - keypoints[self.rightidx, :2], axis=1)
             bbox_size = b - t
             dist = dist/bbox_size
-            if dist.min() < 1e-2:
-                return False
-            else:
-                return True
-        if b > self.height:
-            if self.log:print('[Error] bottom')
+            return dist.min() >= 1e-2
+        if b > self.height and self.log:
+            print('[Error] bottom')
         return True
     
     def __str__(self) -> str:
@@ -74,10 +70,7 @@ class ComposedFilter:
         valid = conf>self.min_conf
         center = keypoints[valid, :2].mean(axis=0, keepdims=True)
         keypoints[conf<self.min_conf, :2] = center
-        for filt in self.filters:
-            if not filt(keypoints=keypoints, **kwargs):
-                return False
-        return True
+        return all(filt(keypoints=keypoints, **kwargs) for filt in self.filters)
     
     def nms(self, annots):
         # This function do nothing
@@ -101,9 +94,13 @@ class ComposedFilter:
         return res
 
 def make_filter(param):
-    filters = []
-    for key, val in param.filter.items():
-        filters.append(globals()[key](log=param.log, width=param.width, height=param.height, **val))
+    filters = [
+        globals()[key](
+            log=param.log, width=param.width, height=param.height, **val
+        )
+        for key, val in param.filter.items()
+    ]
+
     comp = ComposedFilter(filters, param.min_conf)
     print(comp)
     return comp

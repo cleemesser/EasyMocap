@@ -40,14 +40,13 @@ def multi_stage_optimize(body_model, body_params, bboxes, keypoints2d, Pall, nor
     config.OPT_R = True
     config.OPT_T = True
     config.OPT_SHAPE = True
-    with Timer('Optimize 2D Pose/{} frames'.format(keypoints2d.shape[1]), not args.verbose):
+    with Timer(f'Optimize 2D Pose/{keypoints2d.shape[1]} frames', not args.verbose):
+        config.OPT_POSE = False
         if args.direct:
-            config.OPT_POSE = False
             body_params = optimizeMirrorDirect(body_model, body_params, bboxes, keypoints2d, Pall, normal, weight, config)
             config.OPT_POSE = True
             body_params = optimizeMirrorDirect(body_model, body_params, bboxes, keypoints2d, Pall, normal, weight, config)
         else:
-            config.OPT_POSE = False
             body_params = optimizeMirrorSoft(body_model, body_params, bboxes, keypoints2d, Pall, normal, weight, config)
             config.OPT_POSE = True
             body_params = optimizeMirrorSoft(body_model, body_params, bboxes, keypoints2d, Pall, normal, weight, config)

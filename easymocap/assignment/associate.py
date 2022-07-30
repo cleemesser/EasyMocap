@@ -80,14 +80,7 @@ def simple_associate(annots, affinity, dimGroups, Pall, group, cfg):
             err_view = err.sum(axis=1)/((err>0.).sum(axis=1))
             flag = (err_view < cfg.max_repro_error).all()
             err = err.sum()/(err>0).sum()
-            # err_view = err.sum(axis=1)/((err>0.).sum(axis=1))
-            # err = err.sum()/(err>0.).sum()
-            # flag = err_view.max() < err_view.mean() * 2
-            flag = True
-            for crit in criterions:
-                if not crit(keypoints3d):
-                    flag = False
-                    break
+            flag = all(crit(keypoints3d) for crit in criterions)
             if flag:
                 # print('[associate]: view {}'.format(Vused))
                 results.append({
@@ -102,7 +95,7 @@ def simple_associate(annots, affinity, dimGroups, Pall, group, cfg):
                 outlier_view = Vused[err_view.argmax()]
                 proposal[outlier_view] = -1
                 proposals.append(proposal)
-        if len(results) == 0:
+        if not results:
             continue
         if len(results) > 1:
             # print('[associate] More than one avalible results')

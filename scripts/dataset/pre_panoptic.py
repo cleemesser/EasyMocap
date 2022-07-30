@@ -59,10 +59,7 @@ def convert_keypoints3d(inp, out):
     idx_i = [names_i.index(i) for i in commons]
     idx_o = [names_o.index(i) for i in commons]
     use_hand = True
-    if use_hand:
-        zero_body = np.zeros((25 + 21 + 21, 4))
-    else:
-        zero_body = np.zeros((25, 4))
+    zero_body = np.zeros((25 + 21 + 21, 4)) if use_hand else np.zeros((25, 4))
     for i in trange(10000):
         bodyname = bodynames.format(i)
         if not os.path.exists(bodyname):

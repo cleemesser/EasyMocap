@@ -24,7 +24,7 @@ class Person:
         self.Vused = Vused
 
     def __str__(self) -> str:
-        return '{}: {}'.format(self.id, self.Vused)
+        return f'{self.id}: {self.Vused}'
 
     @property
     def keypoints3d(self):

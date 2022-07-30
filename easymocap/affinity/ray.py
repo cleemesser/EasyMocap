@@ -27,7 +27,7 @@ class Affinity:
                 lines = computeRay(det['keypoints'][None, :15, :], 
                     cam['invK'], cam['R'], cam['T'])[0]
                 pluckers.append(lines)
-            if len(pluckers) > 0:
+            if pluckers:
                 pluckers = np.stack(pluckers)
             lPluckers.append(pluckers)
         for nv0 in range(nViews-1):
@@ -40,5 +40,4 @@ class Affinity:
                 distance[dimGroups[nv0]:dimGroups[nv0+1], dimGroups[nv1]:dimGroups[nv1+1]] = dist
                 distance[dimGroups[nv1]:dimGroups[nv1+1], dimGroups[nv0]:dimGroups[nv0+1]] = dist.T
         distance[distance > self.MAX_DIST] = self.MAX_DIST
-        affinity = 1 - distance / self.MAX_DIST
-        return affinity
+        return 1 - distance / self.MAX_DIST

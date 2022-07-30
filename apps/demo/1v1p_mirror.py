@@ -40,10 +40,7 @@ def demo_1v1p1f_smpl_mirror(path, body_model, spin_model, args):
         # bboxes: (nViews(2), 1, 5); keypoints2d: (nViews(2), 1, nJoints, 3)
         bboxes = bboxes[:, None]
         keypoints2d = keypoints2d[:, None]
-        if args.normal:
-            normal = dataset.normal(nf)[None, :, :]
-        else:
-            normal = None
+        normal = dataset.normal(nf)[None, :, :] if args.normal else None
         body_params = multi_stage_optimize(body_model, body_params, bboxes, keypoints2d, Pall=camera['P'], normal=normal, args=args)
         vertices = body_model(return_verts=True, return_tensor=False, **body_params)
         keypoints = body_model(return_verts=False, return_tensor=False, **body_params)
@@ -54,10 +51,16 @@ def demo_1v1p1f_smpl_mirror(path, body_model, spin_model, args):
             write_data[i].update(select_nf(body_params, i))
         if args.vis_smpl:
             # render the results
-            render_data = {pids[i]: {
-                'vertices': vertices[i], 
-                'faces': body_model.faces, 
-                'vid': 0, 'name': 'human_{}'.format(pids[i])} for i in range(len(pids))}
+            render_data = {
+                pids[i]: {
+                    'vertices': vertices[i],
+                    'faces': body_model.faces,
+                    'vid': 0,
+                    'name': f'human_{pids[i]}',
+                }
+                for i in range(len(pids))
+            }
+
             dataset.vis_smpl(render_data, image, camera, nf)
         dataset.write_smpl(write_data, nf)
 
@@ -71,15 +74,15 @@ def demo_1v1pmf_smpl_mirror(path, body_model, spin_model, args):
         frames = list(range(start, end, args.step))
         nFrames = len(frames)
         pids = [0, 1]
-        body_params_all = {pid:[None for nf in frames] for pid in pids}
-        bboxes = {pid:[None for nf in frames] for pid in pids}
-        keypoints2d = {pid:[None for nf in frames] for pid in pids}
+        body_params_all = {pid: [None for _ in frames] for pid in pids}
+        bboxes = {pid: [None for _ in frames] for pid in pids}
+        keypoints2d = {pid: [None for _ in frames] for pid in pids}
         for nf in tqdm(frames, desc='loading'):
             image, annots = dataset[nf]
             # 这个时候如果annots不够 不能够跳过了，需要进行补全
             camera = dataset.camera(nf)
             # 初始化每个人的SMPL参数
-            for i, annot in enumerate(annots):
+            for annot in annots:
                 pid = annot['id']
                 if pid not in pids:
                     continue
@@ -97,10 +100,7 @@ def demo_1v1pmf_smpl_mirror(path, body_model, spin_model, args):
         keypoints2d = np.stack([np.stack(keypoints2d[pid]) for pid in pids])
         # optimize
         P = dataset.camera(start)['P']
-        if args.normal:
-            normal = dataset.normal_all(start=start, end=end)
-        else:
-            normal = None
+        normal = dataset.normal_all(start=start, end=end) if args.normal else None
         body_params = multi_stage_optimize(body_model, body_params, bboxes, keypoints2d, Pall=P, normal=normal, args=args)
         # write
         vertices = body_model(return_verts=True, return_tensor=False, **body_params)
@@ -117,10 +117,16 @@ def demo_1v1pmf_smpl_mirror(path, body_model, spin_model, args):
             if args.vis_smpl:
                 image, annots = dataset[nf]
                 camera = dataset.camera(nf)
-                render_data = {pids[i]: {
-                    'vertices': vertices[i*nFrames+idx], 
-                    'faces': body_model.faces, 
-                    'vid': 0, 'name': 'human_{}'.format(pids[i])} for i in range(len(pids))}
+                render_data = {
+                    pids[i]: {
+                        'vertices': vertices[i * nFrames + idx],
+                        'faces': body_model.faces,
+                        'vid': 0,
+                        'name': f'human_{pids[i]}',
+                    }
+                    for i in range(len(pids))
+                }
+
                 dataset.vis_smpl(render_data, image, camera, nf)
 
 if __name__ == "__main__":
@@ -134,7 +140,7 @@ if __name__ == "__main__":
     parser.add_argument('--normal', action='store_true',
         help='set to use the normal of the mirror')
     args = parse_parser(parser)
-    
+
     helps = '''
   Demo code for single view and one person with mirror:
 
@@ -144,7 +150,7 @@ if __name__ == "__main__":
     '''.format(args.path, ', '.join(args.sub), args.out,
         args.model, args.gender, args.body)
     print(helps)
-    with Timer('Loading {}, {}'.format(args.model, args.gender)):
+    with Timer(f'Loading {args.model}, {args.gender}'):
         body_model = load_model(args.gender, model_type=args.model)
     with Timer('Loading SPIN'):
         spin_model = SPIN(

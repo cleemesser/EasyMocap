@@ -31,7 +31,7 @@ class VisOpen3DSocket(BaseSocket):
         self.out = cfg.out
         self.cfg = cfg
         if self.write:
-            print('[Info] capture the screen to {}'.format(self.out))
+            print(f'[Info] capture the screen to {self.out}')
             os.makedirs(self.out, exist_ok=True)
         # scene
         vis = o3d.visualization.VisualizerWithKeyCallback()
@@ -67,7 +67,7 @@ class VisOpen3DSocket(BaseSocket):
         self.zero_vertices = Vector3dVector(np.zeros((self.body_model.nVertices, 3)))
 
         self.vertices, self.meshes = [], []
-        for i in range(self.max_human):
+        for _ in range(self.max_human):
             self.add_human(zero_params)
 
         self.count = 0
@@ -133,7 +133,8 @@ class VisOpen3DSocket(BaseSocket):
         return datas_new
 
     def main(self, datas):
-        if self.debug:log('[Info] Load data {}'.format(self.count))
+        if self.debug:
+            log(f'[Info] Load data {self.count}')
         if isinstance(datas, str):
             datas = json.loads(datas)
         for data in datas:
@@ -156,7 +157,7 @@ class VisOpen3DSocket(BaseSocket):
                     self.vertices[i] = Vector3dVector(vertices)
                 else:
                     params.append(data)
-            if len(params) > 0:
+            if params:
                 params = self.body_model.merge_params(params, share_shape=False)
                 vertices = self.body_model(return_verts=True, return_tensor=False, **params)
                 for i in range(vertices.shape[0]):
@@ -181,7 +182,8 @@ class VisOpen3DSocket(BaseSocket):
         if self.disconnect and not self.block:
             self.previous.clear()
         if not self.queue.empty():
-            if self.debug:log('Update' + str(self.queue.qsize()))
+            if self.debug:
+                log(f'Update{str(self.queue.qsize())}')
             datas = self.queue.get()
             if not self.block:
                 while self.queue.qsize() > 0:

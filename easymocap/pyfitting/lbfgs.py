@@ -20,15 +20,16 @@ def _cubic_interpolate(x1, f1, g1, x2, f2, g2, bounds=None):
     #   t_new = min(max(min_pos,xmin_bound),xmax_bound);
     d1 = g1 + g2 - 3 * (f1 - f2) / (x1 - x2)
     d2_square = d1**2 - g1 * g2
-    if d2_square >= 0:
-        d2 = d2_square.sqrt()
-        if x1 <= x2:
-            min_pos = x2 - (x2 - x1) * ((g2 + d2 - d1) / (g2 - g1 + 2 * d2))
-        else:
-            min_pos = x1 - (x1 - x2) * ((g1 + d2 - d1) / (g1 - g2 + 2 * d2))
-        return min(max(min_pos, xmin_bound), xmax_bound)
-    else:
+    if d2_square < 0:
         return (xmin_bound + xmax_bound) / 2.
+    d2 = d2_square.sqrt()
+    min_pos = (
+        x2 - (x2 - x1) * ((g2 + d2 - d1) / (g2 - g1 + 2 * d2))
+        if x1 <= x2
+        else x1 - (x1 - x2) * ((g1 + d2 - d1) / (g1 - g2 + 2 * d2))
+    )
+
+    return min(max(min_pos, xmin_bound), xmax_bound)
 
 
 def _strong_wolfe(obj_func,
@@ -394,11 +395,7 @@ class LBFGS(Optimizer):
             # compute step length
             ############################################################
             # reset initial guess for step size
-            if state['n_iter'] == 1:
-                t = min(1., 1. / flat_grad.abs().sum()) * lr
-            else:
-                t = lr
-
+            t = min(1., 1. / flat_grad.abs().sum()) * lr if state['n_iter'] == 1 else lr
             # directional derivative
             gtd = flat_grad.dot(d)  # g * d
 
@@ -409,17 +406,15 @@ class LBFGS(Optimizer):
             # optional line search: user function
             ls_func_evals = 0
             if line_search_fn is not None:
-                # perform line search, using user function
                 if line_search_fn != "strong_wolfe":
                     raise RuntimeError("only 'strong_wolfe' is supported")
-                else:
-                    x_init = self._clone_param()
+                x_init = self._clone_param()
 
-                    def obj_func(x, t, d):
-                        return self._directional_evaluate(closure, x, t, d)
+                def obj_func(x, t, d):
+                    return self._directional_evaluate(closure, x, t, d)
 
-                    loss, flat_grad, t, ls_func_evals = _strong_wolfe(
-                        obj_func, x_init, t, d, loss, flat_grad, gtd)
+                loss, flat_grad, t, ls_func_evals = _strong_wolfe(
+                    obj_func, x_init, t, d, loss, flat_grad, gtd)
                 self._add_grad(t, d)
                 opt_cond = flat_grad.abs().max() <= tolerance_grad
             else:

@@ -27,21 +27,30 @@ class MV1PMF(MVBase):
 
     def write_smpl(self, params, nf, mode='smpl'):
         result = {'id': 0}
-        result.update(params)
+        result |= params
         super().write_smpl([result], nf, mode)
 
     def vis_smpl(self, vertices, faces, images, nf, sub_vis=[], 
         mode='smpl', extra_data=[], add_back=True):
         outname = join(self.out, 'smpl', '{:06d}.jpg'.format(nf))
-        render_data = {}
-        assert vertices.shape[1] == 3 and len(vertices.shape) == 2, 'shape {} != (N, 3)'.format(vertices.shape)
+        assert (
+            vertices.shape[1] == 3 and len(vertices.shape) == 2
+        ), f'shape {vertices.shape} != (N, 3)'
+
         pid = self.pid
-        render_data[pid] = {'vertices': vertices, 'faces': faces, 
-            'vid': pid, 'name': 'human_{}_{}'.format(nf, pid)}
+        render_data = {
+            pid: {
+                'vertices': vertices,
+                'faces': faces,
+                'vid': pid,
+                'name': f'human_{nf}_{pid}',
+            }
+        }
+
         cameras = {'K': [], 'R':[], 'T':[]}
         if len(sub_vis) == 0:
             sub_vis = self.cams
-        for key in cameras.keys():
+        for key in cameras:
             cameras[key] = np.stack([self.cameras[cam][key] for cam in sub_vis])
         images = [images[self.cams.index(cam)] for cam in sub_vis]
         self.writer.vis_smpl(render_data, images, cameras, outname, add_back=add_back)

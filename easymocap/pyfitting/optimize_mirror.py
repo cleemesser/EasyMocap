@@ -76,8 +76,7 @@ class LossKeypointsMirror2D(LossRepro):
         point_cam = torch.einsum('ab,fnb->fna', self.Pall, kpts_homo)
         img_points = point_cam[..., :2]/point_cam[..., 2:]
         img_points = img_points.view(self.nViews, self.nFrames, self.nJoints, 2)
-        residual = (img_points - self.keypoints2d) * self.conf
-        return residual
+        return (img_points - self.keypoints2d) * self.conf
 
     def __call__(self, kpts_est, **kwargs):
         "reprojection error for mirror"
@@ -94,8 +93,8 @@ class LossKeypointsMirror2D(LossRepro):
 class LossKeypointsMirror2DDirect(LossKeypointsMirror2D):
     def __init__(self, keypoints2d, bboxes, Pall, normal=None, cfg=None, mirror=None) -> None:
         super().__init__(keypoints2d, bboxes, Pall, cfg)
-        nFrames = 1
         if mirror is None:
+            nFrames = 1
             self.mirror = torch.zeros([nFrames, 4], device=cfg.device)
             if normal is not None:
                 self.mirror[:, :3] = torch.Tensor(normal).to(cfg.device)
@@ -197,10 +196,12 @@ class MirrorLoss():
         self.idx1 = idx1
 
     def loss(self, lKeypoints, weight_loss):
-        loss_dict = {}
-        for key in ['parallel_self', 'parallel_mirror', 'vertical_self']:
-            if weight_loss[key] > 0.:
-                loss_dict[key] = 0.
+        loss_dict = {
+            key: 0.0
+            for key in ['parallel_self', 'parallel_mirror', 'vertical_self']
+            if weight_loss[key] > 0.0
+        }
+
         # mirror loss for two person
         kpts0 = lKeypoints[0][..., :self.N_JOINTS, :]
         kpts1 = flipPoint(lKeypoints[1][..., :self.N_JOINTS, :])

@@ -86,7 +86,7 @@ def read_keypoints3d_a4d(outname):
     return res_
 
 def read_keypoints3d_all(path, key='keypoints3d', pids=[]):
-    assert os.path.exists(path), '{} not exists!'.format(path)
+    assert os.path.exists(path), f'{path} not exists!'
     results = {}
     filenames = sorted(glob(join(path, '*.json')))
     for filename in filenames:

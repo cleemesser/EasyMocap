@@ -18,7 +18,7 @@ class Config(BaseConfig):
         cfg.port = 9999
         cfg.width = 1920
         cfg.height = 1080
-        
+
         cfg.max_human = 5
         cfg.track = True
         cfg.block = True # block visualization or not, True for visualize each frame, False in realtime applications
@@ -58,9 +58,7 @@ class Config(BaseConfig):
     def parse(cfg):
         if cfg.host == 'auto':
             cfg.host = socket.gethostname()
-        if cfg.camera.set_camera:
-            pass
-        else:# use default camera
+        if not cfg.camera.set_camera:
             # theta, phi = cfg.camera.theta, cfg.camera.phi
             theta, phi = np.deg2rad(cfg.camera.theta), np.deg2rad(cfg.camera.phi)
             cx, cy, cz = cfg.camera.cx, cfg.camera.cy, cfg.camera.cz

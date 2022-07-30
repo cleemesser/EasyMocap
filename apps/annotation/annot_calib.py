@@ -41,7 +41,7 @@ class Matcher:
     
     def hint(self):
         self.cnt = (self.cnt + 1)%self.nJoints
-        print('>>> label point {}'.format(self.cnt))
+        print(f'>>> label point {self.cnt}')
         
     def add(self, annotator, param, conf=1.):
         "add matched points"
@@ -96,9 +96,9 @@ class Matcher:
         width = lw * 5
         k2d = np.array(annots['keypoints2d'])
         # cache lines
-        for nl, (start, end) in enumerate(self.cache_lines):
+        for start, end in self.cache_lines:
             plot_line(img, start, end, lw, (255, 255, 200))
-            
+
         for nl, (i, j) in enumerate(self.lines):
             if k2d[i][2] > 0 and k2d[j][2] > 0:
                 plot_line(img, k2d[i], k2d[j], lw, self.lines_color[nl])
@@ -126,7 +126,7 @@ def create_chessboard(path, keypoints3d, out='annots'):
         annname = join(path, annname)
         if not os.path.exists(annname):
             save_json(annname, template)
-        elif True:
+        else:
             annots = read_json(annname)
             annots['keypoints3d'] = template['keypoints3d']
             save_json(annname, annots)

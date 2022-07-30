@@ -23,13 +23,13 @@ def smpl_from_skel(path, sub, out, skel3d, args):
     pids = list(results3d.keys())
     weight_shape = load_weight_shape(args.model, args.opts)
     weight_pose = load_weight_pose(args.model, args.opts)
-    with Timer('Loading {}, {}'.format(args.model, args.gender)):
+    with Timer(f'Loading {args.model}, {args.gender}'):
         body_model = load_model(args.gender, model_type=args.model)
     for pid, result in results3d.items():
         body_params = smpl_from_keypoints3d(body_model, result['keypoints3d'], config, args,
             weight_shape=weight_shape, weight_pose=weight_pose)
         result['body_params'] = body_params
-    
+
     # write for each frame
     for nf, skelname in enumerate(tqdm(filenames, desc='writing')):
         basename = os.path.basename(skelname)
@@ -41,7 +41,7 @@ def smpl_from_skel(path, sub, out, skel3d, args):
                 nnf = frames.index(nf)
                 val = {'id': pid}
                 params = select_nf(result['body_params'], nnf)
-                val.update(params)
+                val |= params
                 res.append(val)
         write_smpl(outname, res)
 

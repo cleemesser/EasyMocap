@@ -21,7 +21,7 @@ def extract_video(videoname, path, start, end, step):
     outpath = join(path, 'images', base)
     if os.path.exists(outpath) and len(os.listdir(outpath)) > 0:
         num_images = len(os.listdir(outpath))
-        print('>> exists {} frames'.format(num_images))
+        print(f'>> exists {num_images} frames')
         return base
     else:
         os.makedirs(outpath, exist_ok=True)
@@ -37,29 +37,29 @@ def extract_video(videoname, path, start, end, step):
     return base
 
 def extract_2d(openpose, image, keypoints, render, args):
-    skip = False
-    if os.path.exists(keypoints):
-        # check the number of images and keypoints
-        if len(os.listdir(image)) == len(os.listdir(keypoints)):
-            skip = True
+    skip = bool(
+        os.path.exists(keypoints)
+        and len(os.listdir(image)) == len(os.listdir(keypoints))
+    )
+
     if not skip:
         os.makedirs(keypoints, exist_ok=True)
         if os.name != 'nt':
-            cmd = './build/examples/openpose/openpose.bin --image_dir {} --write_json {} --display 0'.format(image, keypoints)
+            cmd = f'./build/examples/openpose/openpose.bin --image_dir {image} --write_json {keypoints} --display 0'
+
         else:
-            cmd = 'bin\\OpenPoseDemo.exe --image_dir {} --write_json {} --display 0'.format(join(os.getcwd(),image), join(os.getcwd(),keypoints))
+            cmd = f'bin\\OpenPoseDemo.exe --image_dir {join(os.getcwd(), image)} --write_json {join(os.getcwd(), keypoints)} --display 0'
+
         if args.highres!=1:
-            cmd = cmd + ' --net_resolution -1x{}'.format(int(16*((368*args.highres)//16)))
+            cmd += f' --net_resolution -1x{int(16*((368*args.highres)//16))}'
         if args.handface:
-            cmd = cmd + ' --hand --face'
+            cmd += ' --hand --face'
         if args.render:
-            if os.path.exists(join(os.getcwd(),render)):
-                cmd = cmd + ' --write_images {}'.format(join(os.getcwd(),render))
-            else:
+            if not os.path.exists(join(os.getcwd(), render)):
                 os.makedirs(join(os.getcwd(),render), exist_ok=True)
-                cmd = cmd + ' --write_images {}'.format(join(os.getcwd(),render))
+            cmd += f' --write_images {join(os.getcwd(), render)}'
         else:
-            cmd = cmd + ' --render_pose 0'
+            cmd += ' --render_pose 0'
         os.chdir(openpose)
         os.system(cmd)
 
@@ -100,14 +100,13 @@ def bbox_from_openpose(keypoints, rescale=1.2, detection_thresh=0.01):
     bbox_size = valid_keypoints.max(axis=0) - valid_keypoints.min(axis=0)
     # adjust bounding box tightness
     bbox_size = bbox_size * rescale
-    bbox = [
-        center[0] - bbox_size[0]/2, 
-        center[1] - bbox_size[1]/2,
-        center[0] + bbox_size[0]/2, 
-        center[1] + bbox_size[1]/2,
-        keypoints[valid, 2].mean()
+    return [
+        center[0] - bbox_size[0] / 2,
+        center[1] - bbox_size[1] / 2,
+        center[0] + bbox_size[0] / 2,
+        center[1] + bbox_size[1] / 2,
+        keypoints[valid, 2].mean(),
     ]
-    return bbox
 
 def load_openpose(opname):
     mapname = {'face_keypoints_2d':'face2d', 'hand_left_keypoints_2d':'handl2d', 'hand_right_keypoints_2d':'handr2d'}
@@ -139,7 +138,7 @@ def convert_from_openpose(path_orig, src, dst, annotdir):
     for inp in tqdm(inputlist, desc='{:10s}'.format(os.path.basename(dst))):
         annots = load_openpose(join(src, inp))
         base = inp.replace('_keypoints.json', '')
-        annotname = join(dst, base+'.json')
+        annotname = join(dst, f'{base}.json')
         imgname = annotname.replace(annotdir, 'images').replace('.json', '.jpg')
         annot = create_annot_file(annotname, imgname)
         annot['annots'] = annots
@@ -197,15 +196,18 @@ config_low = {
 }
 
 def extract_yolo_hrnet(image_root, annot_root, ext='jpg', use_low=False):
-    imgnames = sorted(glob(join(image_root, '*.{}'.format(ext))))
+    imgnames = sorted(glob(join(image_root, f'*.{ext}')))
     import torch
     device = torch.device('cuda')
     from easymocap.estimator import Detector
     config = config_low if use_low else config_high
     print(config)
     detector = Detector('yolo', 'hrnet', device, config)
-    for nf, imgname in enumerate(tqdm(imgnames)):
-        annotname = join(annot_root, os.path.basename(imgname).replace('.{}'.format(ext), '.json'))
+    for imgname in tqdm(imgnames):
+        annotname = join(
+            annot_root, os.path.basename(imgname).replace(f'.{ext}', '.json')
+        )
+
         annot = create_annot_file(annotname, imgname)
         img0 = cv2.imread(imgname)
         annot['annots'] = detect_frame(detector, img0, 0)
@@ -236,7 +238,7 @@ if __name__ == "__main__":
     parser.add_argument('--start', type=int, default=0,
         help='frame start')
     parser.add_argument('--end', type=int, default=10000,
-        help='frame end')    
+        help='frame end')
     parser.add_argument('--step', type=int, default=1,
         help='frame step')
     parser.add_argument('--low', action='store_true',
@@ -266,11 +268,11 @@ if __name__ == "__main__":
             for sub in subs:
                 image_root = join(args.path, 'images', sub)
                 annot_root = join(args.path, args.annot, sub)
-                if os.path.exists(annot_root):
-                    # check the number of annots and images
-                    if len(os.listdir(image_root)) == len(os.listdir(annot_root)):
-                        print('skip ', annot_root)
-                        continue
+                if os.path.exists(annot_root) and len(
+                    os.listdir(image_root)
+                ) == len(os.listdir(annot_root)):
+                    print('skip ', annot_root)
+                    continue
                 if mode == 'openpose':
                     extract_2d(args.openpose, image_root, 
                         join(args.path, 'openpose', sub), 

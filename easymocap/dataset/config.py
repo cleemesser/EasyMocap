@@ -5,91 +5,123 @@
   @ LastEditTime: 2021-05-27 14:33:03
   @ FilePath: /EasyMocap/easymocap/dataset/config.py
 '''
+
 import numpy as np
 
-CONFIG = {}
-
-CONFIG['smpl'] = {'nJoints': 24, 'kintree': 
-    [
-        [ 0, 1 ],
-        [ 0, 2 ],
-        [ 0, 3 ],
-        [ 1, 4 ],
-        [ 2, 5 ],
-        [ 3, 6 ],
-        [ 4, 7 ],
-        [ 5, 8 ],
-        [ 6, 9 ],
-        [ 7, 10],
-        [ 8, 11],
-        [ 9, 12],
-        [ 9, 13],
-        [ 9, 14],
-        [12, 15],
-        [13, 16],
-        [14, 17],
-        [16, 18],
-        [17, 19],
-        [18, 20],
-        [19, 21],
-        [20, 22],
-        [21, 23],
-    ], 
-    'joint_names': [
-        'MidHip',            # 0
-        'LUpLeg',       # 1
-        'RUpLeg',      # 2
-        'spine',           # 3
-        'LLeg',         # 4
-        'RLeg',        # 5
-        'spine1',          # 6
-        'LFoot',        # 7
-        'RFoot',       # 8
-        'spine2',          # 9
-        'LToeBase',     # 10
-        'RToeBase',    # 11
-        'neck',            # 12
-        'LShoulder',    # 13
-        'RShoulder',   # 14
-        'head',            # 15
-        'LArm',         # 16
-        'RArm',        # 17
-        'LForeArm',     # 18
-        'RForeArm',    # 19
-        'LHand',        # 20
-        'RHand',       # 21
-        'LHandIndex1',  # 22
-        'RHandIndex1', # 23
-    ]
+CONFIG = {
+    'smpl': {
+        'nJoints': 24,
+        'kintree': [
+            [0, 1],
+            [0, 2],
+            [0, 3],
+            [1, 4],
+            [2, 5],
+            [3, 6],
+            [4, 7],
+            [5, 8],
+            [6, 9],
+            [7, 10],
+            [8, 11],
+            [9, 12],
+            [9, 13],
+            [9, 14],
+            [12, 15],
+            [13, 16],
+            [14, 17],
+            [16, 18],
+            [17, 19],
+            [18, 20],
+            [19, 21],
+            [20, 22],
+            [21, 23],
+        ],
+        'joint_names': [
+            'MidHip',  # 0
+            'LUpLeg',  # 1
+            'RUpLeg',  # 2
+            'spine',  # 3
+            'LLeg',  # 4
+            'RLeg',  # 5
+            'spine1',  # 6
+            'LFoot',  # 7
+            'RFoot',  # 8
+            'spine2',  # 9
+            'LToeBase',  # 10
+            'RToeBase',  # 11
+            'neck',  # 12
+            'LShoulder',  # 13
+            'RShoulder',  # 14
+            'head',  # 15
+            'LArm',  # 16
+            'RArm',  # 17
+            'LForeArm',  # 18
+            'RForeArm',  # 19
+            'LHand',  # 20
+            'RHand',  # 21
+            'LHandIndex1',  # 22
+            'RHandIndex1',  # 23
+        ],
+    },
+    'body25': {
+        'nJoints': 25,
+        'kintree': [
+            [1, 0],
+            [2, 1],
+            [3, 2],
+            [4, 3],
+            [5, 1],
+            [6, 5],
+            [7, 6],
+            [8, 1],
+            [9, 8],
+            [10, 9],
+            [11, 10],
+            [12, 8],
+            [13, 12],
+            [14, 13],
+            [15, 0],
+            [16, 0],
+            [17, 15],
+            [18, 16],
+            [19, 14],
+            [20, 19],
+            [21, 14],
+            [22, 11],
+            [23, 22],
+            [24, 11],
+        ],
+        'joint_names': [
+            "Nose",
+            "Neck",
+            "RShoulder",
+            "RElbow",
+            "RWrist",
+            "LShoulder",
+            "LElbow",
+            "LWrist",
+            "MidHip",
+            "RHip",
+            "RKnee",
+            "RAnkle",
+            "LHip",
+            "LKnee",
+            "LAnkle",
+            "REye",
+            "LEye",
+            "REar",
+            "LEar",
+            "LBigToe",
+            "LSmallToe",
+            "LHeel",
+            "RBigToe",
+            "RSmallToe",
+            "RHeel",
+        ],
+    },
 }
 
-CONFIG['body25'] = {'nJoints': 25, 'kintree':
-   [[ 1,  0],
-    [ 2,  1],
-    [ 3,  2],
-    [ 4,  3],
-    [ 5,  1],
-    [ 6,  5],
-    [ 7,  6],
-    [ 8,  1],
-    [ 9,  8],
-    [10,  9],
-    [11, 10],
-    [12,  8],
-    [13, 12],
-    [14, 13],
-    [15,  0],
-    [16,  0],
-    [17, 15],
-    [18, 16],
-    [19, 14],
-    [20, 19],
-    [21, 14],
-    [22, 11],
-    [23, 22],
-    [24, 11]], 
-    'joint_names': [
-        "Nose", "Neck", "RShoulder", "RElbow", "RWrist", "LShoulder", "LElbow", "LWrist", "MidHip", "RHip","RKnee","RAnkle","LHip","LKnee","LAnkle","REye","LEye","REar","LEar","LBigToe","LSmallToe","LHeel","RBigToe","RSmallToe","RHeel"]}
+
 CONFIG['body25']['kintree_order'] = [
     [1, 8], # 躯干放在最前面
     [1, 2],
@@ -670,10 +702,7 @@ def getKintree(name='total'):
         kintree[NLIMBS_BODY:NLIMBS_BODY + NLIMBS_HAND] += NJOINTS_BODY
         kintree[NLIMBS_BODY + NLIMBS_HAND:NLIMBS_BODY + 2*NLIMBS_HAND] += NJOINTS_BODY + NJOINTS_HAND
     return kintree
-CONFIG['total'] = {}
-CONFIG['total']['kintree'] = getKintree('total')
-CONFIG['total']['nJoints'] = 137
-
+CONFIG['total'] = {'kintree': getKintree('total'), 'nJoints': 137}
 COCO17_IN_BODY25 = [0,16,15,18,17,5,2,6,3,7,4,12,9,13,10,14,11]
 
 CONFIG['bodyhandface']['joint_names'] = CONFIG['body25']['joint_names']

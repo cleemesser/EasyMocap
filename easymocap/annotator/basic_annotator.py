@@ -56,7 +56,7 @@ class AnnotBase:
 
         self.isOpen = True
         self._frame = self.start
-        self.visited_frames = set([self._frame])
+        self.visited_frames = {self._frame}
         bbox_name, kpts_name = restore_key[body]
         self.param = {
             'frame': 0, 'nFrames': self.nFrames,
@@ -117,8 +117,7 @@ class AnnotBase:
             print('Reach to the first frame')
             return None
         imgname, annname = self.dataset[self.frame-1]
-        annots = load_annot_to_tmp(annname)
-        return annots
+        return load_annot_to_tmp(annname)
 
     @staticmethod
     def set_param(param, imgname, annname, nf, no_img=False):
@@ -224,16 +223,15 @@ class AnnotMV:
                 annot.run(key='')
         if key in self.register_keys.keys():
             self.register_keys[key](self, param=self.param)
-        if len(self.vis_funcs_all) > 0 or True:
-            imgs = []
-            for sub in self.subs:
-                img = self.annotdict[sub].param['img0'].copy()
-                for func in self.vis_funcs_all:
-                    img = func(img, sub, param=self.annotdict[sub].param)
-                imgs.append(img)
-            for func in [merge, resize_to_screen]:
-                imgs = func(imgs, scale=0.1)
-            cv2.imshow(self.name, imgs)
+        imgs = []
+        for sub in self.subs:
+            img = self.annotdict[sub].param['img0'].copy()
+            for func in self.vis_funcs_all:
+                img = func(img, sub, param=self.annotdict[sub].param)
+            imgs.append(img)
+        for func in [merge, resize_to_screen]:
+            imgs = func(imgs, scale=0.1)
+        cv2.imshow(self.name, imgs)
 
 import numpy as np
 def callback_select_image(click, select, ranges, **kwargs):
@@ -366,9 +364,12 @@ def parse_parser(parser):
                 continue
             if newsub.split('+')[0] in subs:
                 clips.append(newsub)
-        for sub in subs:
-            if os.path.exists(join(args.path, 'images', sub)):
-                clips.append(sub)
+        clips.extend(
+            sub
+            for sub in subs
+            if os.path.exists(join(args.path, 'images', sub))
+        )
+
         args.sub = sorted(clips)
     elif args.from_file is not None and args.from_file.endswith('.json'):
         data = read_json(args.from_file)

@@ -117,12 +117,9 @@ class HMR(nn.Module):
                 nn.BatchNorm2d(planes * block.expansion),
             )
 
-        layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample))
+        layers = [block(self.inplanes, planes, stride, downsample)]
         self.inplanes = planes * block.expansion
-        for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes))
-
+        layers.extend(block(self.inplanes, planes) for _ in range(1, blocks))
         return nn.Sequential(*layers)
 
 
@@ -153,7 +150,7 @@ class HMR(nn.Module):
         pred_pose = init_pose
         pred_shape = init_shape
         pred_cam = init_cam
-        for i in range(n_iter):
+        for _ in range(n_iter):
             xc = torch.cat([xf, pred_pose, pred_shape, pred_cam],1)
             xc = self.fc1(xc)
             xc = self.drop1(xc)
@@ -162,7 +159,7 @@ class HMR(nn.Module):
             pred_pose = self.decpose(xc) + pred_pose
             pred_shape = self.decshape(xc) + pred_shape
             pred_cam = self.deccam(xc) + pred_cam
-        
+
         pred_rotmat = rot6d_to_rotmat(pred_pose).view(batch_size, 24, 3, 3)
 
         return pred_rotmat, pred_shape, pred_cam

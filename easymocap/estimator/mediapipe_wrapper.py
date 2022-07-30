@@ -18,14 +18,13 @@ def bbox_from_keypoints(keypoints, rescale=1.2, detection_thresh=0.05, MIN_PIXEL
     if bbox_size[0] < MIN_PIXEL or bbox_size[1] < MIN_PIXEL:
         return [0, 0, 100, 100, 0]
     bbox_size = bbox_size * rescale
-    bbox = [
-        center[0] - bbox_size[0]/2, 
-        center[1] - bbox_size[1]/2,
-        center[0] + bbox_size[0]/2, 
-        center[1] + bbox_size[1]/2,
-        keypoints[valid, 2].mean()
+    return [
+        center[0] - bbox_size[0] / 2,
+        center[1] - bbox_size[1] / 2,
+        center[0] + bbox_size[0] / 2,
+        center[1] + bbox_size[1] / 2,
+        keypoints[valid, 2].mean(),
     ]
-    return bbox
 
 class Detector:
     NUM_BODY = 33
@@ -51,9 +50,7 @@ class Detector:
             model_name = mp.solutions.hands.Hands
         else:
             raise NotImplementedError
-        self.models = [
-            model_name(**cfg) for nv in range(nViews)
-        ]
+        self.models = [model_name(**cfg) for _ in range(nViews)]
     
     @staticmethod
     def to_array(pose, W, H, start=0):
@@ -100,10 +97,7 @@ class Detector:
         annots = annots['annots'][0]
         if 'keypoints' in annots.keys():
             kpts = annots['keypoints']
-            if self.to_openpose:
-                config = CONFIG['body25']
-            else:
-                config = CONFIG['mpbody']
+            config = CONFIG['body25'] if self.to_openpose else CONFIG['mpbody']
             plot_keypoints(image, kpts, 0, config)
         if 'face2d' in annots.keys():
             kpts = annots['face2d']
@@ -116,7 +110,7 @@ class Detector:
         if 'handr2d' in annots.keys():
             kpts = annots['handr2d']
             plot_keypoints(image, kpts, 1, CONFIG['hand'], use_limb_color=True)
-        cv2.imshow('vis{}'.format(nv), image)
+        cv2.imshow(f'vis{nv}', image)
         cv2.waitKey(5)
 
     def process_body(self, data, results, image_width, image_height):
@@ -194,18 +188,17 @@ class Detector:
             with Timer('- face', True):
                 self.process_face(data, results, image_width, image_height, image=image)
             annots = {
-                'filename': '{}/run.jpg'.format(nv),
+                'filename': f'{nv}/run.jpg',
                 'height': image_height,
                 'width': image_width,
-                'annots': [
-                    data
-                ],
-                'isKeyframe': False
+                'annots': [data],
+                'isKeyframe': False,
             }
+
             if self.show:
                 self.vis(image_, annots, nv)
             annots_all.append(annots)
-            # results.face_landmarks
+                # results.face_landmarks
         return annots_all
 
 def extract_2d(image_root, annot_root, config, mode='holistic'):
@@ -218,15 +211,12 @@ def extract_2d(image_root, annot_root, config, mode='holistic'):
     ext = config.pop('ext')
     import os
     from tqdm import tqdm
-    if mode == 'holistic' or mode == 'pose':
-        to_openpose = True
-    else:
-        to_openpose = False
+    to_openpose = mode in ['holistic', 'pose']
     detector = Detector(nViews=1, to_openpose=to_openpose, model_type=mode, show=False, **config)
-    imgnames = sorted(glob(join(image_root, '*'+ext)))
+    imgnames = sorted(glob(join(image_root, f'*{ext}')))
     for imgname in tqdm(imgnames, desc='{:10s}'.format(os.path.basename(annot_root))):
         base = os.path.basename(imgname).replace(ext, '')
-        annotname = join(annot_root, base+'.json')
+        annotname = join(annot_root, f'{base}.json')
         image = cv2.imread(imgname)
         annots = detector([image])[0]
         annots['filename'] = os.sep.join(imgname.split(os.sep)[-2:])

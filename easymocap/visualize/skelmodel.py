@@ -50,14 +50,23 @@ class SkelModel:
         self.body_type = body_type
         self.device = 'none'
         cur_dir = os.path.dirname(__file__)
-        faces = np.loadtxt(join(cur_dir, 'assets', 'sphere_faces_{}.txt'.format(res)), dtype=np.int)
-        self.vertices = np.loadtxt(join(cur_dir, 'assets', 'sphere_vertices_{}.txt'.format(res)))
+        faces = np.loadtxt(
+            join(cur_dir, 'assets', f'sphere_faces_{res}.txt'), dtype=np.int
+        )
+
+        self.vertices = np.loadtxt(
+            join(cur_dir, 'assets', f'sphere_vertices_{res}.txt')
+        )
+
         # compose faces
-        faces_all = []
-        for nj in range(self.nJoints):
-            faces_all.append(faces + nj*self.vertices.shape[0])
-        for nk in range(len(self.kintree)):
-            faces_all.append(faces + self.nJoints*self.vertices.shape[0] + nk*self.vertices.shape[0])
+        faces_all = [faces + nj*self.vertices.shape[0] for nj in range(self.nJoints)]
+        faces_all.extend(
+            faces
+            + self.nJoints * self.vertices.shape[0]
+            + nk * self.vertices.shape[0]
+            for nk in range(len(self.kintree))
+        )
+
         self.faces = np.vstack(faces_all)
         self.color = None
         self.nVertices = self.vertices.shape[0] * self.nJoints + self.vertices.shape[0] * len(self.kintree)
@@ -79,7 +88,7 @@ class SkelModel:
             kpts3d = keypoints3d[nper]
             # limb
             closet_joints = []
-            for nk, (i, j) in enumerate(self.kintree):
+            for i, j in self.kintree:
                 if kpts3d[i][-1] < min_conf or kpts3d[j][-1] < min_conf:
                     vertices_all.append(self.vertices*0.001)
                     continue
@@ -88,15 +97,11 @@ class SkelModel:
                     vertices_all.append(self.vertices*0.001)
                     continue
                 if length < self.joint_radius * 5:
-                    closet_joints.append(i)
-                    closet_joints.append(j)
+                    closet_joints.extend((i, j))
                 vertices = self.vertices @ T[:3, :3].T + T[:3, 3:].T
                 vertices_all.append(vertices)
             for nj in range(self.nJoints):
-                if self.body_type in ['bodyhand', 'bodyhandface'] and nj > 25:
-                    r_ = r / 2
-                else:
-                    r_ = r
+                r_ = r / 2 if self.body_type in ['bodyhand', 'bodyhandface'] and nj > 25 else r
                 if kpts3d[nj, -1] < min_conf:
                     vertices_all.append(self.vertices*0.001)
                     continue
@@ -125,11 +130,13 @@ class SMPLSKEL:
 
     def __call__(self, return_verts=True, **kwargs):
         keypoints3d = self.smpl_model(return_verts=False, return_tensor=False, **kwargs)
-        if not return_verts:
-            return keypoints3d
-        else:
-            verts = self.body_model(return_verts=True, return_tensor=False, keypoints3d=keypoints3d[0])
-            return verts
+        return (
+            self.body_model(
+                return_verts=True, return_tensor=False, keypoints3d=keypoints3d[0]
+            )
+            if return_verts
+            else keypoints3d
+        )
     
     def init_params(self, nFrames):
         return np.zeros((self.body_model.nJoints, 4))

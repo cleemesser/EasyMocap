@@ -19,7 +19,7 @@ class ImageFolder:
         self.annot_root = join(path, self.annot)
         if not os.path.exists(self.annot_root):
             no_annot = True
-        self.annot_root_tmp = join(path, self.annot + '_tmp')
+        self.annot_root_tmp = join(path, f'{self.annot}_tmp')
         if os.path.exists(self.annot_root_tmp) and remove_tmp:
             shutil.rmtree(self.annot_root_tmp)
         if sub is None:
@@ -43,18 +43,17 @@ class ImageFolder:
         imgname = join(self.image_root, self.imgnames[index])
         if self.no_annot:
             annname = None
+        elif self.isTmp:
+            annname = join(self.annot_root_tmp, self.annnames[index])
         else:
-            if self.isTmp:
-                annname = join(self.annot_root_tmp, self.annnames[index])
-            else:
-                annname = join(self.annot_root, self.annnames[index])
+            annname = join(self.annot_root, self.annnames[index])
         return imgname, annname
     
     def __len__(self):
         return len(self.imgnames)
     
     def __str__(self) -> str:
-        return '{}: {} images'.format(self.root, len(self))
+        return f'{self.root}: {len(self)} images'
 
 class MVBase:
     def __init__(self, path, subs, annot='annots') -> None:
@@ -64,7 +63,7 @@ class MVBase:
         self.annot = annot
         self.image_root = join(path, self.image)
         self.annot_root = join(path, self.annot)
-        self.annot_root_tmp = join(path, self.annot + '_tmp')
+        self.annot_root_tmp = join(path, f'{self.annot}_tmp')
         assert len(subs) > 0, subs
         self.imgnames, self.annnames = {}, {}
         for sub in subs:

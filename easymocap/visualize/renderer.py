@@ -20,22 +20,21 @@ colors = [
 ]
 
 colors_table = {
-    # colorblind/print/copy safe:
     '_blue': [0.65098039, 0.74117647, 0.85882353],
-    '_pink': [.9, .7, .7],
-    '_mint': [ 166/255.,  229/255.,  204/255.],
-    '_mint2': [ 202/255.,  229/255.,  223/255.],
-    '_green': [ 153/255.,  216/255.,  201/255.],
-    '_green2': [ 171/255.,  221/255.,  164/255.],
-    '_red': [ 251/255.,  128/255.,  114/255.],
-    '_orange': [ 253/255.,  174/255.,  97/255.],
-    '_yellow': [ 250/255.,  230/255.,  154/255.],
-    'r':[255/255,0,0],
-    'g':[0,255/255,0],
-    'b':[0,0,255/255],
-    'k':[0,0,0],
-    'y':[255/255,255/255,0],
-    'purple':[128/255,0,128/255]
+    '_pink': [0.9, 0.7, 0.7],
+    '_mint': [166 / 255.0, 229 / 255.0, 204 / 255.0],
+    '_mint2': [202 / 255.0, 229 / 255.0, 223 / 255.0],
+    '_green': [153 / 255.0, 216 / 255.0, 201 / 255.0],
+    '_green2': [171 / 255.0, 221 / 255.0, 164 / 255.0],
+    '_red': [251 / 255.0, 128 / 255.0, 114 / 255.0],
+    '_orange': [253 / 255.0, 174 / 255.0, 97 / 255.0],
+    '_yellow': [250 / 255.0, 230 / 255.0, 154 / 255.0],
+    'r': [1, 0, 0],
+    'g': [0, 1, 0],
+    'b': [0, 0, 1],
+    'k': [0, 0, 0],
+    'y': [1, 1, 0],
+    'purple': [128 / 255, 0, 128 / 255],
 }
 
 def get_colors(pid):
@@ -110,10 +109,7 @@ class Renderer(object):
             np.radians(180), [1, 0, 0])
         output_images, output_colors, output_depths = [], [], []
         for nv, img_ in enumerate(images):
-            if use_white:
-                img = np.zeros_like(img_, dtype=np.uint8) + 255
-            else:
-                img = img_.copy()
+            img = np.zeros_like(img_, dtype=np.uint8) + 255 if use_white else img_.copy()
             K, R, T = cameras['K'][nv].copy(), cameras['R'][nv], cameras['T'][nv]
             # down scale the image to speed up rendering
             img = cv2.resize(img, None, fx=1/self.down_scale, fy=1/self.down_scale)
@@ -124,30 +120,15 @@ class Renderer(object):
             scene = pyrender.Scene(bg_color=self.bg_color,
                                    ambient_light=self.ambient_light)
             for iextra, _mesh in enumerate(self.extra_mesh):
-                if True:
-                    mesh = _mesh.copy()
-                    trans_cam = np.eye(4)
-                    trans_cam[:3, :3] = R
-                    trans_cam[:3, 3:] = T
-                    mesh.apply_transform(trans_cam)
-                    mesh.apply_transform(rot)
-                    # mesh.vertices = np.asarray(mesh.vertices) @ R.T + T.T
-                    mesh_ = pyrender.Mesh.from_trimesh(mesh)
-                    scene.add(mesh_, 'extra{}'.format(iextra))
-                else:
-                    vert = np.asarray(_mesh.vertices).copy()
-                    faces = np.asarray(_mesh.faces)
-                    vert = vert @ R.T + T.T
-                    mesh = trimesh.Trimesh(vert, faces, process=False)
-                    mesh.apply_transform(rot)
-                    material = pyrender.MetallicRoughnessMaterial(
-                        metallicFactor=0.0,
-                        alphaMode='OPAQUE',
-                        baseColorFactor=(0., 0., 0., 1.))
-                    mesh = pyrender.Mesh.from_trimesh(
-                        mesh,
-                        material=material)
-                    scene.add(mesh, 'extra{}'.format(iextra))
+                mesh = _mesh.copy()
+                trans_cam = np.eye(4)
+                trans_cam[:3, :3] = R
+                trans_cam[:3, 3:] = T
+                mesh.apply_transform(trans_cam)
+                mesh.apply_transform(rot)
+                # mesh.vertices = np.asarray(mesh.vertices) @ R.T + T.T
+                mesh_ = pyrender.Mesh.from_trimesh(mesh)
+                scene.add(mesh_, f'extra{iextra}')
             for trackId, data in render_data.items():
                 vert = data['vertices'].copy()
                 faces = data['faces']
@@ -161,10 +142,6 @@ class Renderer(object):
                         metallicFactor=0.0,
                         alphaMode='OPAQUE',
                         baseColorFactor=col)
-                    mesh = pyrender.Mesh.from_trimesh(
-                        mesh,
-                        material=material)
-                    scene.add(mesh, data['name'])
                 else:
                     mesh = trimesh.Trimesh(vert, faces, vertex_colors=data['colors'], process=False)
                     mesh.apply_transform(rot)
@@ -172,8 +149,10 @@ class Renderer(object):
                         metallicFactor=0.0,
                         alphaMode='OPAQUE',
                         baseColorFactor=(1., 1., 1.))
-                    mesh = pyrender.Mesh.from_trimesh(mesh, material=material)
-                    scene.add(mesh, data['name'])
+                mesh = pyrender.Mesh.from_trimesh(
+                    mesh,
+                    material=material)
+                scene.add(mesh, data['name'])
             camera_pose = np.eye(4)
             camera = pyrender.camera.IntrinsicsCamera(fx=K[0, 0], fy=K[1, 1], cx=K[0, 2], cy=K[1, 2])
             scene.add(camera, pose=camera_pose)
@@ -192,7 +171,7 @@ class Renderer(object):
                     cv2.bitwise_and(rend_rgba[:, :, :3], rend_rgba[:, :, 3:4].repeat(3, 2)), 1, 0)
             else:
                 rend_cat = rend_rgba
-            
+
             output_colors.append(rend_rgba)
             output_depths.append(rend_depth)
             output_images.append(rend_cat)
@@ -264,7 +243,6 @@ class Renderer(object):
                 scene.add(light, pose=light_pose)
 
                 light_pose[:3, 3] = [0, -1, 4]
-                scene.add(light, pose=light_pose)
             else:
                 trans = [0, 0, 0]
                 # Use 3 directional lights
@@ -276,7 +254,7 @@ class Renderer(object):
                 light_pose[:3, 3] = np.array([0, 1, 1]) + trans
                 scene.add(light, pose=light_pose)
                 light_pose[:3, 3] = np.array([1, 1, 2]) + trans
-                scene.add(light, pose=light_pose)
+            scene.add(light, pose=light_pose)
             if camera is None:
                 if K is None:
                     camera_center = np.array([img.shape[1] / 2., img.shape[0] / 2.])
@@ -297,7 +275,7 @@ class Renderer(object):
             output_colors.append(color)
             output_img = (color[:, :, :3] * valid_mask +
                           (1 - valid_mask) * img)
-            
+
             output_img = output_img.astype(np.uint8)
             output_images.append(output_img)
         if return_depth:

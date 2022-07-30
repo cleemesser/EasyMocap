@@ -27,7 +27,7 @@ class CritWithTorso(BaseCrit):
         self.min_conf = min_conf
     
     def __call__(self, keypoints3d, **kwargs) -> bool:
-        self.log = '{}'.format(keypoints3d[self.idx, -1])
+        self.log = f'{keypoints3d[self.idx, -1]}'
         return (keypoints3d[self.idx, -1] > self.min_conf).all()
 
 class CritLenTorso(BaseCrit):
@@ -48,9 +48,7 @@ class CritLenTorso(BaseCrit):
             return True
         length = np.linalg.norm(keypoints3d[self.dst, :3] - keypoints3d[self.src, :3])
         self.log = '{}: {:.3f}'.format(self.name, length)
-        if length < self.min_torso_length or length > self.max_torso_length:
-            return False
-        return True
+        return length >= self.min_torso_length and length <= self.max_torso_length
 
 class CritRange(BaseCrit):
     def __init__(self, minr, maxr, rate_inlier, min_conf) -> None:
@@ -65,7 +63,7 @@ class CritRange(BaseCrit):
         crit = (k3d[:, 0] > self.min[0]) & (k3d[:, 0] < self.max[0]) &\
         (k3d[:, 1] > self.min[1]) & (k3d[:, 1] < self.max[1]) &\
         (k3d[:, 2] > self.min[2]) & (k3d[:, 2] < self.max[2])
-        self.log = '{}: {}'.format(self.name, k3d)
+        self.log = f'{self.name}: {k3d}'
         return crit.sum()/crit.shape[0] > self.rate
 
 class CritMinMax(BaseCrit):  
@@ -104,8 +102,7 @@ class CritLimbLength(BaseCrit):
                 if rate > self.max_rate:
                     valid = False
                     break
-            else:
-                if l_est > 0.3:
-                    valid = False
-                    break
+            elif l_est > 0.3:
+                valid = False
+                break
         return valid

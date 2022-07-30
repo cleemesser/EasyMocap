@@ -58,10 +58,9 @@ def read_intri(intri_name):
     camnames = intri.read('names', dt='list')
     cameras = {}
     for key in camnames:
-        cam = {}
-        cam['K'] = intri.read('K_{}'.format(key))
+        cam = {'K': intri.read(f'K_{key}')}
         cam['invK'] = np.linalg.inv(cam['K'])
-        cam['dist'] = intri.read('dist_{}'.format(key))
+        cam['dist'] = intri.read(f'dist_{key}')
         cameras[key] = cam
     return cameras
 
@@ -74,9 +73,9 @@ def write_intri(intri_name, cameras):
         key = key_.split('.')[0]
         K, dist = val['K'], val['dist']
         assert K.shape == (3, 3), K.shape
-        assert dist.shape == (1, 5) or dist.shape == (5, 1), dist.shape
-        intri.write('K_{}'.format(key), K)
-        intri.write('dist_{}'.format(key), dist.reshape(1, 5))
+        assert dist.shape in [(1, 5), (5, 1)], dist.shape
+        intri.write(f'K_{key}', K)
+        intri.write(f'dist_{key}', dist.reshape(1, 5))
 
 def write_extri(extri_name, cameras):
     extri = FileStorage(extri_name, True)
@@ -85,9 +84,9 @@ def write_extri(extri_name, cameras):
     extri.write('names', camnames, 'list')
     for key_, val in cameras.items():
         key = key_.split('.')[0]
-        extri.write('R_{}'.format(key), val['Rvec'])
-        extri.write('Rot_{}'.format(key), val['R'])
-        extri.write('T_{}'.format(key), val['T'])
+        extri.write(f'R_{key}', val['Rvec'])
+        extri.write(f'Rot_{key}', val['R'])
+        extri.write(f'T_{key}', val['T'])
     return 0
 
 def read_camera(intri_name, extri_name, cam_names=[]):
@@ -100,11 +99,10 @@ def read_camera(intri_name, extri_name, cam_names=[]):
     cam_names = intri.read('names', dt='list')
     for cam in cam_names:
         # 内参只读子码流的
-        cams[cam] = {}
-        cams[cam]['K'] = intri.read('K_{}'.format( cam))
+        cams[cam] = {'K': intri.read(f'K_{cam}')}
         cams[cam]['invK'] = np.linalg.inv(cams[cam]['K'])
-        Rvec = extri.read('R_{}'.format(cam))
-        Tvec = extri.read('T_{}'.format(cam))
+        Rvec = extri.read(f'R_{cam}')
+        Tvec = extri.read(f'T_{cam}')
         R = cv2.Rodrigues(Rvec)[0]
         RT = np.hstack((R, Tvec))
 
@@ -114,7 +112,7 @@ def read_camera(intri_name, extri_name, cam_names=[]):
         P[cam] = cams[cam]['K'] @ cams[cam]['RT']
         cams[cam]['P'] = P[cam]
 
-        cams[cam]['dist'] = intri.read('dist_{}'.format(cam))
+        cams[cam]['dist'] = intri.read(f'dist_{cam}')
     cams['basenames'] = cam_names
     return cams
 
@@ -132,21 +130,20 @@ def write_camera(camera, path):
         if key_ == 'basenames':
             continue
         key = key_.split('.')[0]
-        intri.write('K_{}'.format(key), val['K'])
-        intri.write('dist_{}'.format(key), val['dist'])
+        intri.write(f'K_{key}', val['K'])
+        intri.write(f'dist_{key}', val['dist'])
         if 'Rvec' not in val.keys():
             val['Rvec'] = cv2.Rodrigues(val['R'])[0]
-        extri.write('R_{}'.format(key), val['Rvec'])
-        extri.write('Rot_{}'.format(key), val['R'])
-        extri.write('T_{}'.format(key), val['T'])
+        extri.write(f'R_{key}', val['Rvec'])
+        extri.write(f'Rot_{key}', val['R'])
+        extri.write(f'T_{key}', val['T'])
 
 def camera_from_img(img):
     height, width = img.shape[0], img.shape[1]
     # focal = 1.2*max(height, width) # as colmap
     focal = 1.2*min(height, width) # as colmap
     K = np.array([focal, 0., width/2, 0., focal, height/2, 0. ,0., 1.]).reshape(3, 3)
-    camera = {'K':K ,'R': np.eye(3), 'T': np.zeros((3, 1)), 'dist': np.zeros((1, 5))}
-    return camera
+    return {'K':K ,'R': np.eye(3), 'T': np.zeros((3, 1)), 'dist': np.zeros((1, 5))}
 
 class Undistort:
     @staticmethod

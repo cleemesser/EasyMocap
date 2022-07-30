@@ -14,7 +14,7 @@ def load_subs(path, subs):
     if len(subs) == 0:
         subs = sorted(os.listdir(join(path, 'images')))
     subs = [sub for sub in subs if os.path.isdir(join(path, 'images', sub))]
-    if len(subs) == 0:
+    if not subs:
         subs = ['']
     return subs
 
@@ -114,11 +114,13 @@ if __name__ == "__main__":
         image_root = join(args.path, 'images', sub)
         annot_root = join(args.path, args.annot, sub)
         tmp_root = join(args.path, mode, sub)
-        if os.path.exists(annot_root) and not args.force:
-            # check the number of annots and images
-            if len(os.listdir(image_root)) == len(os.listdir(annot_root)):
-                print('[Skip] detection {}'.format(annot_root))
-                continue
+        if (
+            os.path.exists(annot_root)
+            and not args.force
+            and len(os.listdir(image_root)) == len(os.listdir(annot_root))
+        ):
+            print(f'[Skip] detection {annot_root}')
+            continue
         if mode == 'openpose':
             from easymocap.estimator.openpose_wrapper import extract_2d
             config[mode]['root'] = args.openpose

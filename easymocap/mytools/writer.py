@@ -21,7 +21,7 @@ class FileWriter:
         keys = ['keypoints3d', 'match', 'smpl', 'skel', 'repro', 'keypoints']
         output_dict = {key:join(self.out, key) for key in keys}
         self.output_dict = output_dict
-        
+
         self.basenames = basenames
         if cfg is not None:
             print(cfg, file=open(join(output_path, 'exp.yml'), 'w'))
@@ -80,7 +80,7 @@ class FileWriter:
         os.makedirs(self.output_dict['keypoints3d'], exist_ok=True)
         if base is None:
             base = '{:06d}'.format(nf)
-        savename = join(self.output_dict['keypoints3d'], '{}.json'.format(base))
+        savename = join(self.output_dict['keypoints3d'], f'{base}.json')
         save_json(savename, results)
     
     def vis_detections(self, images, lDetections, nf, key='keypoints', to_img=True, vis_id=True):
@@ -93,10 +93,7 @@ class FileWriter:
                     pid = det['id_match']
                 else:
                     pid = det['id']
-                if key not in det.keys():
-                    keypoints = det['keypoints']
-                else:
-                    keypoints = det[key]
+                keypoints = det['keypoints'] if key not in det.keys() else det[key]
                 if 'bbox' not in det.keys():
                     bbox = get_bbox_from_pose(keypoints, img)
                 else:
@@ -155,6 +152,6 @@ class FileWriter:
             if nf != -1:
                 if base is None:
                     base = '{:06d}'.format(nf)
-                savename = join(out, '{}.jpg'.format(base))
+                savename = join(out, f'{base}.jpg')
                 cv2.imwrite(savename, image_vis)
             return image_vis

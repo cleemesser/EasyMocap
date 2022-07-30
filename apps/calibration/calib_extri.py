@@ -17,7 +17,7 @@ def calib_extri(path, intriname):
     intri = read_intri(intriname)
     camnames = list(intri.keys())
     extri = {}
-    for ic, cam in enumerate(camnames):
+    for cam in camnames:
         imagenames = sorted(glob(join(path, 'images', cam, '*.jpg')))
         chessnames = sorted(glob(join(path, 'chessboard', cam, '*.json')))
         chessname = chessnames[0]
@@ -27,12 +27,10 @@ def calib_extri(path, intriname):
         k2d = np.array(data['keypoints2d'], dtype=np.float32)
         k2d = np.ascontiguousarray(k2d[:, :-1])
         ret, rvec, tvec = cv2.solvePnP(k3d, k2d, intri[cam]['K'], intri[cam]['dist'])
-        extri[cam] = {}
-        extri[cam]['Rvec'] = rvec
-        extri[cam]['R'] = cv2.Rodrigues(rvec)[0]
+        extri[cam] = {'Rvec': rvec, 'R': cv2.Rodrigues(rvec)[0]}
         extri[cam]['T'] = tvec
         center = - extri[cam]['R'].T @ tvec
-        print('{} center => {}'.format(cam, center.squeeze()))
+        print(f'{cam} center => {center.squeeze()}')
     write_extri(join(os.path.dirname(intriname), 'extri.yml'), extri)
 
 if __name__ == "__main__":

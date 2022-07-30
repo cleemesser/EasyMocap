@@ -43,7 +43,7 @@ class FittingMonitor:
             if torch.isinf(loss).sum() > 0:
                 print('Infinite loss value, stopping!')
                 break
-            
+
             # if all([torch.abs(var.grad.view(-1).max()).item() < self.gtol
             #         for var in params if var.grad is not None]):
             #     print('Small grad, stopping!')                
@@ -54,7 +54,7 @@ class FittingMonitor:
 
                 if loss_rel_change <= self.ftol:
                     break
-            
+
             if self.visualize:
                 vertices = smpl_render.GetVertices(**kwargs)
                 self.mv.update_mesh(vertices[::10], smpl_render.faces)
@@ -75,9 +75,8 @@ class FittingLog:
             self.index = {log_name:0}
 
         else:
-            log_file = open(log_name, 'r')
-            log_pre = log_file.readlines()
-            log_file.close()
+            with open(log_name, 'r') as log_file:
+                log_pre = log_file.readlines()
             self.index = {log_name:len(log_pre)}
             log_file = open(log_name, 'a')
         self.log_file = log_file
@@ -86,8 +85,6 @@ class FittingLog:
             import visdom
             self.vis = visdom.Visdom(env=os.path.realpath(
                 join(os.path.dirname(log_name), '..')).replace(os.sep, '_'))
-        elif False:
-            self.writer = FittingLog.swriter
         self.log_name = log_name
     
     def step(self, loss_dict, weight_loss):
@@ -99,18 +96,13 @@ class FittingLog:
             name = list(loss.keys())
             val = list(loss.values())
             x = self.index.get(self.log_name, 0)
-            if len(val) == 1:
-                y = np.array(val)
-            else:
-                y = np.array(val).reshape(-1, len(val))
+            y = np.array(val) if len(val) == 1 else np.array(val).reshape(-1, len(val))
             self.vis.line(Y=y,X=np.ones(y.shape)*x,
                         win=str(self.log_name),#unicode
                         opts=dict(legend=name,
                             title=self.log_name),
                         update=None if x == 0 else 'append'
                         )
-        elif False:
-            self.writer.add_scalars('data/{}'.format(self.log_name), loss, self.index[self.log_name])
         self.index[self.log_name] += 1
     
     def log_loss(self, weight_loss):

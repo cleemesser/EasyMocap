@@ -135,8 +135,7 @@ def vertices2landmarks(vertices, faces, lmk_faces_idx, lmk_bary_coords):
     lmk_vertices = vertices.view(-1, 3)[lmk_faces].view(
         batch_size, -1, 3, 3)
 
-    landmarks = torch.einsum('blfi,blf->bli', [lmk_vertices, lmk_bary_coords])
-    return landmarks
+    return torch.einsum('blfi,blf->bli', [lmk_vertices, lmk_bary_coords])
 
 
 def lbs(betas, pose, v_template, shapedirs, posedirs, J_regressor, parents,
@@ -270,11 +269,7 @@ def blend_shapes(betas, shape_disps):
         The per-vertex displacement due to shape deformation
     '''
 
-    # Displacement[b, m, k] = sum_{l} betas[b, l] * shape_disps[m, k, l]
-    # i.e. Multiply each shape displacement by its corresponding beta and
-    # then sum them.
-    blend_shape = torch.einsum('bl,mkl->bmk', [betas, shape_disps])
-    return blend_shape
+    return torch.einsum('bl,mkl->bmk', [betas, shape_disps])
 
 
 def batch_rodrigues(rot_vecs, epsilon=1e-8, dtype=torch.float32):
@@ -307,8 +302,7 @@ def batch_rodrigues(rot_vecs, epsilon=1e-8, dtype=torch.float32):
         .view((batch_size, 3, 3))
 
     ident = torch.eye(3, dtype=dtype, device=device).unsqueeze(dim=0)
-    rot_mat = ident + sin * K + (1 - cos) * torch.bmm(K, K)
-    return rot_mat
+    return ident + sin * K + (1 - cos) * torch.bmm(K, K)
 
 
 def transform_mat(R, t):

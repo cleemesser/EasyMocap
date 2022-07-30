@@ -18,12 +18,12 @@ class BaseSocketClient:
     
     def send(self, data):
         val = encode_detect(data)
-        self.s.send(bytes('{}\n'.format(len(val)), 'ascii'))
+        self.s.send(bytes(f'{len(val)}\n', 'ascii'))
         self.s.sendall(val)
     
     def send_smpl(self, data):
         val = encode_smpl(data)
-        self.s.send(bytes('{}\n'.format(len(val)), 'ascii'))
+        self.s.send(bytes(f'{len(val)}\n', 'ascii'))
         self.s.sendall(val)
     
     def close(self):

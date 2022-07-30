@@ -68,17 +68,4 @@ if __name__ == "__main__":
     parser.add_argument('--skip', action='store_true')
     args = parse_parser(parser)
     for sub in args.sub:
-        if False:
-            from glob import glob
-            from os.path import join
-            annnames = sorted(glob(join(args.path, args.annot, sub, '*.json')))
-            for annname in annnames:
-                ann = read_json(annname)
-                for key in ['vanish_line', 'vanish_points']:
-                    if key in ann.keys():
-                        val = ann[key]
-                        val = [val[1], val[0], val[2]]
-                        ann[key] = val
-                save_annot(annname, ann)
-        else:
-            annot_example(args.path, annot=args.annot, sub=sub)
+        annot_example(args.path, annot=args.annot, sub=sub)

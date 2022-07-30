@@ -21,9 +21,7 @@ def callback_select_joints(start, end, annots, select, bbox_name='bbox', kpts_na
     annots = annots['annots']
     # not select a bbox
     if select[bbox_name] == -1 and select['joints'] == -1:
-        corners = []
-        for annot in annots:
-            corners.append(np.array(annot[kpts_name]))
+        corners = [np.array(annot[kpts_name]) for annot in annots]
         corners = np.stack(corners)
         flag, minid = findNearestPoint(corners[..., :2], start)
         if flag:
@@ -31,15 +29,13 @@ def callback_select_joints(start, end, annots, select, bbox_name='bbox', kpts_na
             select['joints'] = minid[1]
         else:
             select['joints'] = -1
-    # have selected a bbox, not select a corner
     elif select[bbox_name] != -1 and select['joints'] == -1:
         i = select[bbox_name]
         corners = np.array(annots[i][kpts_name])[:, :2]
         flag, minid = findNearestPoint(corners, start)
         if flag:
             select['joints'] = minid[0]
-    # have selected a bbox, and select a corner
-    elif select[bbox_name] != -1 and select['joints'] != -1:
+    elif select[bbox_name] != -1:
         x, y = end
         # Move the corner
         data = annots[select[bbox_name]]
@@ -55,5 +51,5 @@ def callback_select_joints(start, end, annots, select, bbox_name='bbox', kpts_na
             if nj in [9, 12]:
                 data[kpts_name][8][0] = (data[kpts_name][9][0] + data[kpts_name][12][0])/2
                 data[kpts_name][8][1] = (data[kpts_name][9][1] + data[kpts_name][12][1])/2
-    elif select[bbox_name] == -1 and select['joints'] != -1:
+    else:
         select['joints'] = -1

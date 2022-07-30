@@ -10,11 +10,10 @@ def findNearestPoint(points, click):
     elif len(points.shape) == 3:
         click = click[None, None, :]
     dist = np.linalg.norm(points - click, axis=-1)
-    if dist.min() < MIN_PIXEL:
-        idx = np.unravel_index(dist.argmin(), dist.shape)
-        return True, idx
-    else:
+    if dist.min() >= MIN_PIXEL:
         return False, (-1, -1)
+    idx = np.unravel_index(dist.argmin(), dist.shape)
+    return True, idx
 
 def callback_select_bbox_corner(start, end, annots, select, bbox_name, **kwargs):
     if start is None or end is None:
@@ -38,7 +37,6 @@ def callback_select_bbox_corner(start, end, annots, select, bbox_name, **kwargs)
             select['corner'] = minid[1]
         else:
             select['corner'] = -1
-    # have selected a bbox, not select a corner
     elif select[bbox_name] != -1 and select['corner'] == -1:
         i = select[bbox_name]
         l, t, r, b = annots[i][bbox_name][:4]
@@ -46,8 +44,7 @@ def callback_select_bbox_corner(start, end, annots, select, bbox_name, **kwargs)
         flag, minid = findNearestPoint(corners, start)
         if flag:
             select['corner'] = minid[0]
-    # have selected a bbox, and select a corner
-    elif select[bbox_name] != -1 and select['corner'] != -1:
+    elif select[bbox_name] != -1:
         x, y = end
         # Move the corner
         if select['corner'] < 4:
@@ -65,7 +62,7 @@ def callback_select_bbox_corner(start, end, annots, select, bbox_name, **kwargs)
             bbox[2] = x + w
             bbox[3] = y + h
 
-    elif select[bbox_name] == -1 and select['corner'] != -1:
+    else:
         select['corner'] = -1
 
 def callback_select_bbox_center(click, annots, select, bbox_name, **kwargs):
@@ -182,10 +179,7 @@ def create_bbox(self, param, **kwargs):
     annots = param['annots']['annots']
     nowids = [d['personID'] for d in annots]
     bbox_name, kpts_name = param['bbox_name'], param['kpts_name']
-    if len(nowids) == 0:
-        maxID = 0
-    else:
-        maxID = max(nowids) + 1
+    maxID = max(nowids) + 1 if nowids else 0
     data = {
         'personID': maxID,
         bbox_name: [start[0], start[1], end[0], end[1], 1],
@@ -200,9 +194,8 @@ def delete_bbox(self, param, **kwargs):
     active = param['select'][bbox_name]
     if active == -1:
         return 0
-    else:
-        param['annots']['annots'].pop(active)
-        param['select'][bbox_name] = -1
+    param['annots']['annots'].pop(active)
+    param['select'][bbox_name] = -1
     return 0
 
 def delete_all_bbox(self, param, **kwargs):

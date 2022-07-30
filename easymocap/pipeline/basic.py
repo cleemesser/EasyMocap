@@ -17,13 +17,10 @@ def multi_stage_optimize(body_model, params, kp3ds, kp2ds=None, bboxes=None, Pal
         cfg.OPT_T = True
         params = optimizePose3D(body_model, params, kp3ds, weight=weight, cfg=cfg)
         # params = optimizePose(body_model, params, kp3ds, weight_loss=weight, kintree=config['kintree'], cfg=cfg)
-    with Timer('Optimize 3D Pose/{} frames'.format(kp3ds.shape[0])):
+    with Timer(f'Optimize 3D Pose/{kp3ds.shape[0]} frames'):
         cfg.OPT_POSE = True
         cfg.ROBUST_3D = False
         params = optimizePose3D(body_model, params, kp3ds, weight=weight, cfg=cfg)
-        if False:
-            cfg.ROBUST_3D = True
-            params = optimizePose3D(body_model, params, kp3ds, weight=weight, cfg=cfg)
         if cfg.model in ['smplh', 'smplx']:
             cfg.OPT_HAND = True
             params = optimizePose3D(body_model, params, kp3ds, weight=weight, cfg=cfg)
@@ -31,7 +28,7 @@ def multi_stage_optimize(body_model, params, kp3ds, kp2ds=None, bboxes=None, Pal
             cfg.OPT_EXPR = True
             params = optimizePose3D(body_model, params, kp3ds, weight=weight, cfg=cfg)
     if kp2ds is not None:
-        with Timer('Optimize 2D Pose/{} frames'.format(kp3ds.shape[0])):
+        with Timer(f'Optimize 2D Pose/{kp3ds.shape[0]} frames'):
             # bboxes => (nFrames, nViews, 5), keypoints2d => (nFrames, nViews, nJoints, 3)
             params = optimizePose2D(body_model, params, bboxes, kp2ds, Pall, weight=weight, cfg=cfg)
     return params
@@ -45,7 +42,7 @@ def multi_stage_optimize2d(body_model, params, kp2ds, bboxes, Pall, weight={}, a
         cfg.OPT_R = True
         cfg.OPT_T = True
         params = optimizePose2D(body_model, params, bboxes, kp2ds, Pall, weight=weight, cfg=cfg)
-    with Timer('Optimize 2D Pose/{} frames'.format(kp2ds.shape[0])):
+    with Timer(f'Optimize 2D Pose/{kp2ds.shape[0]} frames'):
         cfg.OPT_POSE = True
         cfg.OPT_SHAPE = True
         # bboxes => (nFrames, nViews, 5), keypoints2d => (nFrames, nViews, nJoints, 3)

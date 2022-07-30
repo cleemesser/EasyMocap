@@ -128,7 +128,7 @@ def check_calib(path, out, vis=False, show=False, debug=False):
             k2d = np.array(data['keypoints2d'], dtype=np.float32)
             k2d = Undistort.points(k2d, camera['K'], camera['dist'])
             k2ds.append(k2d)
-        if len(k2ds) == 0:
+        if not k2ds:
             break
         Pall = np.stack([camera['P'] for camera in cameras.values()])
         k2ds = np.stack(k2ds)
@@ -195,7 +195,7 @@ def check_match(path, out):
         kpts_repro = projectN3(points3d, camera['P'][None, :, :])[0]
         plot_points2d(img, kpts_repro, lines, col=(0, 0, 255), lw=1, putText=True)
         plot_points2d(img, points2d[cams.index(cam)], lines, col=(0, 255, 0), lw=1, putText=True)
-        outname = join(out, cam+'.jpg')
+        outname = join(out, f'{cam}.jpg')
         cv2.imwrite(outname, img)
 
 if __name__ == "__main__":

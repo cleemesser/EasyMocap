@@ -28,9 +28,7 @@ def projectN3(kpts3d, Pall):
     return kp2ds
 
 def simple_reprojection_error(kpts1, kpts1_proj):
-    # (N, 3)
-    error = np.mean((kpts1[:, :2] - kpts1_proj[:, :2])**2)
-    return error
+    return np.mean((kpts1[:, :2] - kpts1_proj[:, :2])**2)
     
 def simple_triangulate(kpts, Pall):
     # kpts: (nViews, 3)
@@ -103,9 +101,9 @@ def check_limb(keypoints3d, limb_means, thres=0.5):
     valid = True
     cnt = 0
     for (src, dst), val in limb_means.items():
-        if not (keypoints3d[src, 3] > 0 and keypoints3d[dst, 3] > 0):
+        if keypoints3d[src, 3] <= 0 or keypoints3d[dst, 3] <= 0:
             continue
-        cnt += 1 
+        cnt += 1
         # 计算骨长
         l_est = np.linalg.norm(keypoints3d[src, :3] - keypoints3d[dst, :3])
         if abs(l_est - val['mean'])/val['mean']/val['std'] > thres:
