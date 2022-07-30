@@ -14,7 +14,7 @@ def print_help(annotator, **kwargs):
     print('Here is the help:')
     print(  '------------------')
     for key, val in annotator.register_keys.items():
-        print('    {}: '.format(key, ': '), str(val.__doc__))
+        print(f'    {key}: ', val.__doc__)
 
 def print_help_mv(annotator, **kwargs):
     print_help(annotator)
@@ -22,7 +22,7 @@ def print_help_mv(annotator, **kwargs):
     print('Here is the help for each view:')
     print(  '------------------')
     for key, val in annotator.register_keys_view.items():
-        print('    {}: '.format(key, ': '), str(val.__doc__))
+        print(f'    {key}: ', val.__doc__)
 
 def close(annotator, **kwargs):
     """quit the annotation"""
@@ -88,10 +88,7 @@ def choose_personID(i):
 
 def capture_screen(self, param):
     "capture the screen"
-    if param['capture_screen']:
-        param['capture_screen'] = False
-    else:
-        param['capture_screen'] = True
+    param['capture_screen'] = not param['capture_screen']
 
 remain = 0
 keys_pre = []
@@ -109,7 +106,12 @@ def cont_automatic(self, param):
         keys = input('Enter the ordered key(separate with blank): ').split(' ')
         keys_pre = keys
         try:
-            repeats = int(input('Input the repeat times(0->{}): '.format(len(self.dataset)-self.frame)))
+            repeats = int(
+                input(
+                    f'Input the repeat times(0->{len(self.dataset) - self.frame}): '
+                )
+            )
+
         except:
             repeats = 0
         if repeats == -1:
@@ -122,7 +124,7 @@ def cont_automatic(self, param):
         self.no_img = True
     nostop = 'nostop' in keys
     param['stop'] = False
-    for nf in tqdm(range(repeats), desc='auto {}'.format('->'.join(keys))):
+    for nf in tqdm(range(repeats), desc=f"auto {'->'.join(keys)}"):
         for key in keys:
             self.run(key=key, noshow=noshow)
         if chr(get_key()) == 'q' or (param['stop'] and not nostop):
@@ -143,7 +145,10 @@ def automatic(self, param):
     keys = input('Enter the ordered key(separate with blank): ').split(' ')
     keys_pre = keys
     try:
-        repeats = int(input('Input the repeat times(0->{}): '.format(self.nFrames-self.frame)))
+        repeats = int(
+            input(f'Input the repeat times(0->{self.nFrames - self.frame}): ')
+        )
+
     except:
         repeats = 0
     repeats = min(repeats, self.nFrames-self.frame+1)
@@ -154,7 +159,7 @@ def automatic(self, param):
         self.no_img = True
     nostop = 'nostop' in keys
     param['stop'] = False
-    for nf in tqdm(range(repeats), desc='auto {}'.format('->'.join(keys))):
+    for nf in tqdm(range(repeats), desc=f"auto {'->'.join(keys)}"):
         for key in keys:
             self.run(key=key, noshow=noshow)
         if chr(get_key()) == 'q' or (param['stop'] and not nostop):
@@ -186,4 +191,4 @@ for key in 'wasd':
 
 for i in range(5):
     register_keys[str(i)] = set_personID(i)
-    register_keys['s'+str(i)] = choose_personID(i)
+    register_keys[f's{str(i)}'] = choose_personID(i)

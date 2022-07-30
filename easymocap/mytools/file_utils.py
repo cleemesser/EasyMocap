@@ -67,12 +67,12 @@ def read_annot(annotname, mode='body25'):
         elif mode == 'body15':
             data[i]['keypoints'] = data[i]['keypoints'][:15, :]
         elif mode in ['handl', 'handr']:
-            data[i]['keypoints'] = np.array(data[i][mode+'2d']).astype(np.float32)
-            key = 'bbox_'+mode+'2d'
+            data[i]['keypoints'] = np.array(data[i][f'{mode}2d']).astype(np.float32)
+            key = f'bbox_{mode}2d'
             if key not in data[i].keys():
                 data[i]['bbox'] = np.array(get_bbox_from_pose(data[i]['keypoints'])).astype(np.float32)
             else:
-                data[i]['bbox'] = data[i]['bbox_'+mode+'2d'][:5]
+                data[i]['bbox'] = data[i][f'bbox_{mode}2d'][:5]
         elif mode == 'total':
             data[i]['keypoints'] = np.vstack([data[i][key] for key in ['keypoints', 'handl2d', 'handr2d', 'face2d']])
         elif mode == 'bodyhand':
@@ -85,38 +85,34 @@ def read_annot(annotname, mode='body25'):
     return data
 
 def array2raw(array, separator=' ', fmt='%.3f'):
-    assert len(array.shape) == 2, 'Only support MxN matrix, {}'.format(array.shape)
-    res = []
-    for data in array:
-        res.append(separator.join([fmt%(d) for d in data]))
+    assert len(array.shape) == 2, f'Only support MxN matrix, {array.shape}'
+    res = [separator.join([fmt%(d) for d in data]) for data in array]
     
     
 def myarray2string(array, separator=', ', fmt='%.3f', indent=8):
-    assert len(array.shape) == 2, 'Only support MxN matrix, {}'.format(array.shape)
+    assert len(array.shape) == 2, f'Only support MxN matrix, {array.shape}'
     blank = ' ' * indent
     res = ['[']
     for i in range(array.shape[0]):
-        res.append(blank + '  ' + '[{}]'.format(separator.join([fmt%(d) for d in array[i]])))
+        res.append(f'{blank}  ' + f'[{separator.join([fmt%(d) for d in array[i]])}]')
         if i != array.shape[0] -1:
             res[-1] += ', '
-    res.append(blank + ']')
+    res.append(f'{blank}]')
     return '\r\n'.join(res)
 
 def write_common_results(dumpname=None, results=[], keys=[], fmt='%2.3f'):
     format_out = {'float_kind':lambda x: fmt % x}
-    out_text = []
-    out_text.append('[\n')
+    out_text = ['[\n']
     for idata, data in enumerate(results):
         out_text.append('    {\n')
-        output = {}
-        output['id'] = data['id']
+        output = {'id': data['id']}
         for key in keys:
             if key not in data.keys():continue
             # BUG: This function will failed if the rows of the data[key] is too large
             # output[key] = np.array2string(data[key], max_line_width=1000, separator=', ', formatter=format_out)
             output[key] = myarray2string(data[key], separator=', ', fmt=fmt)
-        for key in output.keys():
-            out_text.append('        \"{}\": {}'.format(key, output[key]))
+        for key in output:
+            out_text.append(f'        \"{key}\": {output[key]}')
             if key != keys[-1]:
                 out_text.append(',\n')
             else:
@@ -127,12 +123,11 @@ def write_common_results(dumpname=None, results=[], keys=[], fmt='%2.3f'):
         else:
             out_text.append('\n')
     out_text.append(']\n')
-    if dumpname is not None:
-        mkout(dumpname)
-        with open(dumpname, 'w') as f:
-            f.writelines(out_text)
-    else:
+    if dumpname is None:
         return ''.join(out_text)
+    mkout(dumpname)
+    with open(dumpname, 'w') as f:
+        f.writelines(out_text)
 
 def write_keypoints3d(dumpname, results):
     # TODO:rewrite it
@@ -194,18 +189,18 @@ def correct_bbox(img, bbox):
     return bbox
 
 def merge_params(param_list, share_shape=True):
-    output = {}
-    for key in ['poses', 'shapes', 'Rh', 'Th', 'expression']:
-        if key in param_list[0].keys():
-            output[key] = np.vstack([v[key] for v in param_list])
+    output = {
+        key: np.vstack([v[key] for v in param_list])
+        for key in ['poses', 'shapes', 'Rh', 'Th', 'expression']
+        if key in param_list[0].keys()
+    }
+
     if share_shape:
         output['shapes'] = output['shapes'].mean(axis=0, keepdims=True)
     return output
 
 def select_nf(params_all, nf):
-    output = {}
-    for key in ['poses', 'Rh', 'Th']:
-        output[key] = params_all[key][nf:nf+1, :]
+    output = {key: params_all[key][nf:nf+1, :] for key in ['poses', 'Rh', 'Th']}
     if 'expression' in params_all.keys():
         output['expression'] = params_all['expression'][nf:nf+1, :]
     if params_all['shapes'].shape[0] == 1:

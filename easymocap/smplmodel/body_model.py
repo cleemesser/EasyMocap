@@ -46,8 +46,7 @@ def load_bodydata(model_type, model_path, gender):
         smpl_path = osp.join(model_path, model_fn)
     else:
         smpl_path = model_path
-    assert osp.exists(smpl_path), 'Path {} does not exist!'.format(
-        smpl_path)
+    assert osp.exists(smpl_path), f'Path {smpl_path} does not exist!'
 
     with open(smpl_path, 'rb') as smpl_file:
         data = pickle.load(smpl_file, encoding='latin1')

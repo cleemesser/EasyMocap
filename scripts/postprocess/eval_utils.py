@@ -8,7 +8,7 @@ def compute_similarity_transform(S1, S2):
     i.e. solves the orthogonal Procrutes problem.
     """
     transposed = False
-    if S1.shape[0] != 3 and S1.shape[0] != 2:
+    if S1.shape[0] not in [3, 2]:
         S1 = S1.T
         S2 = S2.T
         transposed = True
@@ -74,8 +74,7 @@ def keypoints_error(gt, est, names, use_align=False, joint_level=True):
     isValid_common = isValid * isValidGT
     est = est[..., :-1]
     gt = gt[..., :-1]
-    dist = {}
-    dist['abs'] = np.sqrt(((gt - est)**2).sum(axis=-1)) * 1000
+    dist = {'abs': np.sqrt(((gt - est)**2).sum(axis=-1)) * 1000}
     dist['pck@50'] = dist['abs'] < 50
     # dist['pck@100'] = dist['abs'] < 100
     # dist['pck@150'] = dist['abs'] < 0.15
@@ -95,8 +94,8 @@ def keypoints_error(gt, est, names, use_align=False, joint_level=True):
     for key in ['abs', 'ra', 'pa', 'pck@50', 'pck@100']:
         if key not in dist:
             continue
-        result[key+'_mean'] = dist[key].mean()
+        result[f'{key}_mean'] = dist[key].mean()
         if joint_level:
             for i, name in enumerate(names):
-                result[key+'_'+name] = dist[key][i]
+                result[f'{key}_{name}'] = dist[key][i]
     return result

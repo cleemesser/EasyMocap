@@ -16,7 +16,7 @@ import numpy as np
 from tqdm import tqdm
 
 def save_json(output, json_path):
-    os.system('mkdir -p {}'.format(os.path.dirname(json_path)))    
+    os.system(f'mkdir -p {os.path.dirname(json_path)}')
     with open(json_path, 'w') as f:
         json.dump(output, f, indent=4)
 
@@ -37,18 +37,14 @@ def openpose2shelf3D(pose3d, score):
 
     # coco2shelf = np.array ( [16, 14, 12, 11, 13, 15, 10, 8, 6, 5, 7, 9] )
     openpose2shelf = np.array([11, 10, 9, 12, 13, 14, 4, 3, 2, 5, 6, 7])
-    shelf_pose[0: 12] += pose3d[openpose2shelf]
-    shelf_score[0: 12] += score[openpose2shelf]
-    if True:
-        shelf_pose[12] = pose3d[1]  # Use middle of shoulder to init
-        shelf_pose[13] = pose3d[0]  # use nose to init
-        shelf_pose[13] = shelf_pose[12] + (shelf_pose[13] - shelf_pose[12]) * np.array ( [0.75, 0.75, 1.5] )
-        shelf_pose[12] = shelf_pose[12] + (pose3d[0] - shelf_pose[12]) * np.array ( [1. / 2., 1. / 2., 1. / 2.] )
-        shelf_score[12] = score[0]*score[1]
-        shelf_score[13] = score[0]*score[1]
-    else:
-        shelf_pose[12] = pose3d[1]
-        shelf_pose[13] = pose3d[0]
+    shelf_pose[:12] += pose3d[openpose2shelf]
+    shelf_score[:12] += score[openpose2shelf]
+    shelf_pose[12] = pose3d[1]  # Use middle of shoulder to init
+    shelf_pose[13] = pose3d[0]  # use nose to init
+    shelf_pose[13] = shelf_pose[12] + (shelf_pose[13] - shelf_pose[12]) * np.array ( [0.75, 0.75, 1.5] )
+    shelf_pose[12] = shelf_pose[12] + (pose3d[0] - shelf_pose[12]) * np.array ( [1. / 2., 1. / 2., 1. / 2.] )
+    shelf_score[12] = score[0]*score[1]
+    shelf_score[13] = score[0]*score[1]
     return shelf_pose, shelf_score
 
 def convert_openpose_shelf(keypoints3d):
@@ -96,8 +92,7 @@ def convert_openpose_shelf1(keypoints3d):
 
 def convert_shelf_shelfgt(keypoints):
     gt_hip = (keypoints[2] + keypoints[3]) / 2
-    gt = np.vstack((keypoints, gt_hip))
-    return gt
+    return np.vstack((keypoints, gt_hip))
 
 def vectorize_distance(a, b):
     """
@@ -144,16 +139,16 @@ def _readResult(filename, isA4d):
     return res_
     
 def readResult(filePath, range_=None, isA4d=None):
-    res = {}
     if range_ is None:
         from glob import glob
         filelists = glob(join(filePath, '*.txt'))
-        range_ = [i for i in range(len(filelists))]        
+        range_ = list(range(len(filelists)))
     if isA4d is None:
         isA4d = args.a4d
-    for imgId in tqdm(range_):
-        res[imgId] = _readResult(join(filePath, '{:06d}.json'.format(imgId)), isA4d)
-    return res
+    return {
+        imgId: _readResult(join(filePath, '{:06d}.json'.format(imgId)), isA4d)
+        for imgId in tqdm(range_)
+    }
 
 class ShelfGT:
     def __init__(self, actor3D) -> None:
@@ -164,7 +159,7 @@ class ShelfGT:
         results = []
         for pid in range(len(self.actor3D)):
             gt_pose = self.actor3D[pid][index-2][0]
-            if gt_pose.shape == (1, 0) or gt_pose.shape == (0, 0):
+            if gt_pose.shape in [(1, 0), (0, 0)]:
                 continue
             keypoints3d = convert_shelf_shelfgt(gt_pose)
             results.append({'id': pid, 'keypoints3d': keypoints3d})
@@ -173,26 +168,33 @@ class ShelfGT:
 def write_to_csv(filename, results, id_wise=True):
     keys = [key for key in results[0].keys() if isinstance(results[0][key], float)]
     if id_wise:
-        ids = list(set([res['id'] for res in results]))
+        ids = list({res['id'] for res in results})
     header = [''] + ['{:s}'.format(key.replace(' ', '')) for key in keys]
     contents = []
     if id_wise:
         for pid in ids:
-            content = ['{}'.format(pid)]
+            content = [f'{pid}']
             for key in keys:
                 vals = [res[key] for res in results if res['id'] == pid]
                 content.append('{:.3f}'.format(sum(vals)/len(vals)))
             contents.append(content)
         # 计算平均值
         content = ['Mean']
-        for i, key in enumerate(keys):
-            content.append('{:.3f}'.format(sum([float(con[i+1]) for con in contents])/len(ids)))
-        contents.append(content)
+        content.extend(
+            '{:.3f}'.format(
+                sum(float(con[i + 1]) for con in contents) / len(ids)
+            )
+            for i, key in enumerate(keys)
+        )
+
     else:
         content = ['Mean']
-        for key in keys:
-            content.append('{:.3f}'.format(sum([res[key] for res in results])/len(results)))
-        contents.append(content)
+        content.extend(
+            '{:.3f}'.format(sum(res[key] for res in results) / len(results))
+            for key in keys
+        )
+
+    contents.append(content)
     import tabulate
     print(tabulate.tabulate(contents, header, tablefmt='fancy_grid'))
     print(tabulate.tabulate(contents, header, tablefmt='fancy_grid'), file=open(filename.replace('.csv', '.txt'), 'w'))
@@ -202,7 +204,7 @@ def write_to_csv(filename, results, id_wise=True):
         header = list(results[0].keys())
         f.write(','.join(header) + '\n')
         for res in results:
-            f.write(','.join(['{}'.format(res[key]) for key in header]) + '\n')
+            f.write(','.join([f'{res[key]}' for key in header]) + '\n')
 
 def evaluate(actor3D, range_, out):
     shelfgt = ShelfGT(actor3D)
@@ -216,9 +218,14 @@ def evaluate(actor3D, range_, out):
     results = []
     for img_id in tqdm(range_):
         # 转化成model_poses
-        ests = []
-        for res in result[img_id]:
-            ests.append({'id': res['id'], 'keypoints3d': convert_openpose_shelf1(res['keypoints3d'])})
+        ests = [
+            {
+                'id': res['id'],
+                'keypoints3d': convert_openpose_shelf1(res['keypoints3d']),
+            }
+            for res in result[img_id]
+        ]
+
         gts = shelfgt[img_id]
         if len(gts) < 1:
             continue
@@ -243,10 +250,7 @@ def evaluate(actor3D, range_, out):
             db = np.linalg.norm(kpts_gt[end, :3] - kpts_est[end, :3], axis=1)
             l = np.linalg.norm(kpts_gt[start, :3] - kpts_gt[end, :3], axis=1)
             isright = 1.0*((da + db) < l)
-            if args.joint:
-                res = {name: isright[i] for i, name in enumerate(names)}
-            else:
-                res = {}
+            res = {name: isright[i] for i, name in enumerate(names)} if args.joint else {}
             res['Mean'] = isright.mean()
             res['nf'] = img_id
             res['id'] = data['id']
@@ -266,24 +270,13 @@ if __name__ == '__main__':
     parser.add_argument('--joint', action='store_true')
 
     args = parser.parse_args ()
-    if args.setting == 'shelf':
+    if args.setting == 'campus':
+        test_range = list(range ( 350, 471 )) + list(range ( 650, 751 ))
+    elif args.setting == 'shelf':
         test_range = range ( 302, 602)
-        # test_range = range (2000, 3200)
-    elif args.setting == 'campus':
-        test_range = [i for i in range ( 350, 471 )] + [i for i in range ( 650, 751 )]
     else:
         raise NotImplementedError
 
     actorsGT = scio.loadmat (args.gt_path)
     test_actor3D = actorsGT['actor3D'][0]
-    if False:
-        valid = np.zeros((3200, 4))
-        for nf in range(3200):
-            for pid in range(4):
-                if test_actor3D[pid][nf].item().shape[0] == 14:
-                    valid[nf, pid] = 1
-        import matplotlib.pyplot as plt
-        plt.plot(valid.sum(axis=1))
-        plt.show()
-        import ipdb; ipdb.set_trace()
     evaluate(test_actor3D, test_range, args.out)

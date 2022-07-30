@@ -28,13 +28,13 @@ if __name__ == "__main__":
     parser.add_argument('--debug', action='store_true')
     args = parser.parse_args()
     key = args.key
-    
+
     config = Config.load(args.cfg)
     body_model = load_object(config.module, config.args)
     params = body_model.init_params(1)
     vertices = body_model(return_verts=True, return_tensor=False, **params)
     joints = body_model(return_verts=False, return_smpl_joints=True, return_tensor=False, **params)
-    
+
     model = create_mesh(vertices=vertices[0], faces=body_model.faces)
     vis = o3d.visualization.Visualizer()
     vis.create_window(width=900, height=900)
@@ -43,8 +43,9 @@ if __name__ == "__main__":
     var_ranges = np.linspace(0, np.pi/2, args.num)
     var_ranges = np.concatenate([-var_ranges, -var_ranges[::-1], var_ranges, var_ranges[::-1]])
     for npose in range(54, params[key].shape[1]):
-        print('[Vis] {}: {}'.format(key, npose))
+        print(f'[Vis] {key}: {npose}')
         for i in range(var_ranges.shape[0]):
             params[key][0, npose] = var_ranges[i]
             update_vis(vis, model, body_model, params)
-    import ipdb; ipdb.set_trace()
+    import ipdb
+    ipdb.set_trace()

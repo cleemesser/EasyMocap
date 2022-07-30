@@ -33,9 +33,18 @@ def init_location(cam, theta, r):
 
 def init_scene(scene, params, gender='male', angle=0):
     # load fbx model
-    bpy.ops.import_scene.fbx(filepath=join(params['smpl_data_folder'], 'basicModel_%s_lbs_10_207_0_v1.0.2.fbx' % gender[0]), axis_forward='-Y', axis_up='-Z', global_scale=100)
+    bpy.ops.import_scene.fbx(
+        filepath=join(
+            params['smpl_data_folder'],
+            f'basicModel_{gender[0]}_lbs_10_207_0_v1.0.2.fbx',
+        ),
+        axis_forward='-Y',
+        axis_up='-Z',
+        global_scale=100,
+    )
+
     print('success load')
-    obname = '%s_avg' % gender[0]
+    obname = f'{gender[0]}_avg'
     ob = bpy.data.objects[obname]
     ob.data.use_auto_smooth = False  # autosmooth creates artifacts
 
@@ -116,12 +125,12 @@ def apply_trans_pose_shape(trans, pose, shape, ob, arm_ob, obname, scene, cam_ob
     mrots, bsh = rodrigues2bshapes(pose)
 
     # set the location of the first bone to the translation parameter
-    arm_ob.pose.bones[obname+'_Pelvis'].location = trans
-    arm_ob.pose.bones[obname+'_root'].location = trans
-    arm_ob.pose.bones[obname +'_root'].keyframe_insert('location', frame=frame)
+    arm_ob.pose.bones[f'{obname}_Pelvis'].location = trans
+    arm_ob.pose.bones[f'{obname}_root'].location = trans
+    arm_ob.pose.bones[f'{obname}_root'].keyframe_insert('location', frame=frame)
     # set the pose of each bone to the quaternion specified by pose
     for ibone, mrot in enumerate(mrots):
-        bone = arm_ob.pose.bones[obname+'_'+part_match['bone_%02d' % ibone]]
+        bone = arm_ob.pose.bones[f'{obname}_' + part_match['bone_%02d' % ibone]]
         bone.rotation_quaternion = Matrix(mrot).to_quaternion()
         if frame is not None:
             bone.keyframe_insert('rotation_quaternion', frame=frame)
@@ -159,10 +168,12 @@ def read_smpl(outname):
     return outputs
 
 def merge_params(param_list, share_shape=True):
-    output = {}
-    for key in ['poses', 'shapes', 'Rh', 'Th', 'expression']:
-        if key in param_list[0].keys():
-            output[key] = np.vstack([v[key] for v in param_list])
+    output = {
+        key: np.vstack([v[key] for v in param_list])
+        for key in ['poses', 'shapes', 'Rh', 'Th', 'expression']
+        if key in param_list[0].keys()
+    }
+
     if share_shape:
         output['shapes'] = output['shapes'].mean(axis=0, keepdims=True)
     return output
@@ -182,14 +193,13 @@ def load_motions(path):
             motions[pid].append(data)
     keys = list(motions.keys())
     # BUG: not strictly equal: (Rh, Th, poses) != (Th, (Rh, poses))
-    for pid in motions.keys():
+    for pid in motions:
         motions[pid] = merge_params(motions[pid])
         motions[pid]['poses'][:, :3] = motions[pid]['Rh']
     return motions
     
 def load_smpl_params(datapath):
-    motions = load_motions(datapath)
-    return motions
+    return load_motions(datapath)
 
 def main(params):
     scene = bpy.data.scenes['Scene']
@@ -203,7 +213,7 @@ def main(params):
     for k in ob.data.shape_keys.key_blocks.keys():
         bpy.data.shape_keys["Key"].key_blocks[k].slider_min = -10
         bpy.data.shape_keys["Key"].key_blocks[k].slider_max = 10
-    
+
     scene.objects.active = arm_ob
 
     motions = load_smpl_params(params['path'])
@@ -223,7 +233,12 @@ def main(params):
             apply_trans_pose_shape(Vector(trans), pose, shape, ob,
                                 arm_ob, obname, scene, cam_ob, frame)
             scene.update()
-        bpy.ops.export_anim.bvh(filepath=join(params['out'], '{}.bvh'.format(pid)), frame_start=0, frame_end=nFrames-1)
+        bpy.ops.export_anim.bvh(
+            filepath=join(params['out'], f'{pid}.bvh'),
+            frame_start=0,
+            frame_end=nFrames - 1,
+        )
+
     return 0
 
 if __name__ == '__main__':
@@ -246,12 +261,8 @@ if __name__ == '__main__':
             main(vars(args))
     except SystemExit as ex:
 
-        if ex.code is None:
-            exit_status = 0
-        else:
-            exit_status = ex.code
-
-        print('Exiting. Exit status: ' + str(exit_status))
+        exit_status = 0 if ex.code is None else ex.code
+        print(f'Exiting. Exit status: {str(exit_status)}')
 
         # Only exit to OS when we are not running in Blender GUI
         if bpy.app.background:

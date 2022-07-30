@@ -57,10 +57,18 @@ def optimizeShape(body_model, body_params, keypoints3d,
             loss_dict['init_shape'] = torch.sum((body_params['shapes'] - body_params_init['shapes'])**2)
         # fittingLog.step(loss_dict, weight_loss)
         if verbose:
-            print(' '.join([key + ' %.3f'%(loss_dict[key].item()*weight_loss[key]) 
-                for key in loss_dict.keys() if weight_loss[key]>0]))
-        loss = sum([loss_dict[key]*weight_loss[key]
-                    for key in loss_dict.keys()])
+            print(
+                ' '.join(
+                    [
+                        key
+                        + ' %.3f' % (loss_dict[key].item() * weight_loss[key])
+                        for key in loss_dict
+                        if weight_loss[key] > 0
+                    ]
+                )
+            )
+
+        loss = sum(loss_dict[key]*weight_loss[key] for key in loss_dict)
         if not debug:
             loss.backward()
             return loss
@@ -83,11 +91,7 @@ N_BODY = 25
 N_HAND = 21
 
 def interp(left_value, right_value, weight, key='poses'):
-    if key == 'Rh':
-        return left_value * weight + right_value * (1 - weight)
-    elif key == 'Th':
-        return left_value * weight + right_value * (1 - weight)
-    elif key == 'poses':
+    if key in ['Rh', 'Th', 'poses']:
         return left_value * weight + right_value * (1 - weight)
 
 def get_interp_by_keypoints(keypoints):
@@ -103,9 +107,7 @@ def get_interp_by_keypoints(keypoints):
     if len(not_valid_frames) > 0:
         start = not_valid_frames[0]
         for i in range(1, len(not_valid_frames)):
-            if not_valid_frames[i] == not_valid_frames[i-1] + 1:
-                pass
-            else:# 改变位置了
+            if not_valid_frames[i] != not_valid_frames[i - 1] + 1:
                 end = not_valid_frames[i-1]
                 ranges.append((start, end))
                 start = not_valid_frames[i]
@@ -120,6 +122,7 @@ def get_interp_by_keypoints(keypoints):
                 for key in ['Rh', 'Th', 'poses']:
                     params[key][nf] = interp(params[key][left], params[key][right], 1-weight, key=key)
         return params
+
     return interp_func
 
 def interp_by_k3d(conf, params):
@@ -132,9 +135,7 @@ def interp_by_k3d(conf, params):
     if len(not_valid_frames) > 0:
         start = not_valid_frames[0]
         for i in range(1, len(not_valid_frames)):
-            if not_valid_frames[i] == not_valid_frames[i-1] + 1:
-                pass
-            else:# 改变位置了
+            if not_valid_frames[i] != not_valid_frames[i - 1] + 1:
                 end = not_valid_frames[i-1]
                 ranges.append((start, end))
                 start = not_valid_frames[i]
@@ -179,10 +180,7 @@ def get_optParams(body_params, cfg, extra_params):
     if cfg is None:
         opt_params = [body_params['Rh'], body_params['Th'], body_params['poses']]
     else:
-        if extra_params is not None:
-            opt_params = extra_params
-        else:
-            opt_params = []
+        opt_params = extra_params if extra_params is not None else []
         if cfg.OPT_R:
             opt_params.append(body_params['Rh'])
         if cfg.OPT_T:
@@ -232,10 +230,22 @@ def _optimizeSMPL(body_model, body_params, prepare_funcs, postprocess_funcs,
         # 3. Summary and log
         cnt = len(records)
         if cfg.verbose and cnt % PRINT_STEP == 0:
-            print('{:-6d}: '.format(cnt) + ' '.join([key + ' %f'%(loss_dict[key].item()*weight_loss[key]) 
-                for key in loss_dict.keys() if weight_loss[key]>0]))
-        loss = sum([loss_dict[key]*weight_loss[key]
-                    for key in loss_dict.keys()])
+            print(
+                (
+                    '{:-6d}: '.format(cnt)
+                    + ' '.join(
+                        [
+                            key
+                            + ' %f'
+                            % (loss_dict[key].item() * weight_loss[key])
+                            for key in loss_dict
+                            if weight_loss[key] > 0
+                        ]
+                    )
+                )
+            )
+
+        loss = sum(loss_dict[key]*weight_loss[key] for key in loss_dict)
         records.append(loss.item())
         if debug:
             return loss_dict

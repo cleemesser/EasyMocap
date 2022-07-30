@@ -64,7 +64,7 @@ def mv1pmf_smpl(dataset, args, weight_pose=None, weight_shape=None):
     bboxes = np.stack(bboxes)
     kp3ds = check_keypoints(kp3ds, 1)
     # optimize the human shape
-    with Timer('Loading {}, {}'.format(args.model, args.gender), not args.verbose):
+    with Timer(f'Loading {args.model}, {args.gender}', not args.verbose):
         body_model = load_model(gender=args.gender, model_type=args.model)
     params = smpl_from_keypoints3d2d(body_model, kp3ds, keypoints2d, bboxes, 
         dataset.Pall, config=dataset.config, args=args,

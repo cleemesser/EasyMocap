@@ -53,11 +53,9 @@ def _findChessboardCornersAdapt(img, pattern):
     return _findChessboardCorners(img, pattern)
 
 def findChessboardCorners(img, annots, pattern):
-    conf = sum([v[2] for v in annots['keypoints2d']])
-    if annots['visited'] and conf > 0:
-        return True
-    elif annots['visited']:
-        return None
+    conf = sum(v[2] for v in annots['keypoints2d'])
+    if annots['visited']:
+        return True if conf > 0 else None
     annots['visited'] = True
     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
     # Find the chess board corners

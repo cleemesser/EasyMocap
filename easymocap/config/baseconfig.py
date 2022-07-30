@@ -49,5 +49,4 @@ def load_object(module_name, module_args):
     module_path = '.'.join(module_name.split('.')[:-1])
     module = importlib.import_module(module_path)
     name = module_name.split('.')[-1]
-    obj = getattr(module, name)(**module_args)
-    return obj
+    return getattr(module, name)(**module_args)

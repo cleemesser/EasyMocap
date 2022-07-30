@@ -25,8 +25,7 @@ def plucker_from_pp(point1, point2):
 
 def dist_pl(query_points, line, moment):
     moment_q = moment - np.cross(query_points, line)
-    dist = np.linalg.norm(moment_q, axis=1)
-    return dist
+    return np.linalg.norm(moment_q, axis=1)
 
 def reciprocal_product(l1, m1, l2, m2):
     l1 = l1[:, None]
@@ -38,8 +37,7 @@ def reciprocal_product(l1, m1, l2, m2):
 
 def dist_pl_pointwise(p0, p1):
     moment_q = p1[..., 3:6] - np.cross(p0[..., :3], p1[..., :3])
-    dist = np.linalg.norm(moment_q, axis=-1)
-    return dist
+    return np.linalg.norm(moment_q, axis=-1)
 
 def dist_ll_pointwise(p0, p1):
     product = np.sum(p0[..., :3] * p1[..., 3:6], axis=-1) + np.sum(p1[..., :3] * p0[..., 3:6], axis=-1)
@@ -81,5 +79,4 @@ def computeRaynd(keypoints2d, invK, R, T):
     while len(cam_center.shape) < len(kp_all_3d.shape):
         cam_center = cam_center[None]
     l, m = plucker_from_pp(cam_center, kp_all_3d)
-    res = np.concatenate((l, m, conf), axis=-1)
-    return res
+    return np.concatenate((l, m, conf), axis=-1)

@@ -16,7 +16,7 @@ import cv2
 import os
 
 def create_chessboard(path, pattern, gridSize, ext):
-    print('Create chessboard {}'.format(pattern))
+    print(f'Create chessboard {pattern}')
     keypoints3d = getChessboard3d(pattern, gridSize=gridSize)
     keypoints2d = np.zeros((keypoints3d.shape[0], 3))
     imgnames = getFileList(path, ext=ext)
@@ -40,10 +40,7 @@ def detect_chessboard(path, out, pattern, gridSize, args):
     create_chessboard(path, pattern, gridSize, ext=args.ext)
     dataset = ImageFolder(path, annot='chessboard', ext=args.ext)
     dataset.isTmp = False
-    if args.silent:
-        trange = range(len(dataset))
-    else:
-        trange = tqdm(range(len(dataset)))
+    trange = range(len(dataset)) if args.silent else tqdm(range(len(dataset)))
     for i in trange:
         imgname, annotname = dataset[i]
         # detect the 2d chessboard
@@ -53,9 +50,9 @@ def detect_chessboard(path, out, pattern, gridSize, args):
         save_json(annotname, annots)
         if show is None:
             if args.debug:
-                print('Cannot find {}'.format(imgname))
+                print(f'Cannot find {imgname}')
             continue
-        outname = join(out, imgname.replace(path + '/images/', ''))
+        outname = join(out, imgname.replace(f'{path}/images/', ''))
         os.makedirs(os.path.dirname(outname), exist_ok=True)
         cv2.imwrite(outname, show)
 
@@ -68,15 +65,17 @@ def detect_chessboard_sequence(path, out, pattern, gridSize, args):
         nFrames = len(dataset)
         found = np.zeros(nFrames, dtype=np.bool)
         visited = np.zeros(nFrames, dtype=np.bool)
-        proposals = []
         init_step = args.max_step
         min_step = args.min_step
-        for nf in range(0, nFrames, init_step):
-            if nf + init_step < len(dataset):
-                proposals.append([nf, nf+init_step])
-        while len(proposals) > 0:
+        proposals = [
+            [nf, nf + init_step]
+            for nf in range(0, nFrames, init_step)
+            if nf + init_step < len(dataset)
+        ]
+
+        while proposals:
             left, right = proposals.pop(0)
-            print('Check [{}, {}]'.format(left, right))
+            print(f'Check [{left}, {right}]')
             for nf in [left, right]:
                 if not visited[nf]:
                     visited[nf] = True
@@ -88,17 +87,17 @@ def detect_chessboard_sequence(path, out, pattern, gridSize, args):
                     save_json(annotname, annots)
                     if show is None:
                         if args.debug:
-                            print('Cannot find {}'.format(imgname))
+                            print(f'Cannot find {imgname}')
                         found[nf] = False
                         continue
                     found[nf] = True
-                    outname = join(out, imgname.replace(path + '/images/', ''))
+                    outname = join(out, imgname.replace(f'{path}/images/', ''))
                     os.makedirs(os.path.dirname(outname), exist_ok=True)
                     cv2.imwrite(outname, show)
             if not found[left] and not found[right]:
                 continue
             mid = (left+right)//2
-            if mid == left or mid == right:
+            if mid in [left, right]:
                 continue
             if mid - left > min_step:
                 proposals.append((left, mid))

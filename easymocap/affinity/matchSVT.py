@@ -31,7 +31,7 @@ def matchSVT(M_aff, dimGroups, M_constr=None, M_obs=None, control={}):
         U, s, VT = np.linalg.svd(Q)
         diagS = s - w_rank/mu
         diagS[diagS<0] = 0
-        
+
         Q = U @ np.diag(diagS) @ VT
         # update X
         X = Q - (W + Y)/mu
@@ -43,9 +43,6 @@ def matchSVT(M_aff, dimGroups, M_constr=None, M_obs=None, control={}):
         X[X < 0] = 0
         X[X > 1] = 1
         X = X * M_constr
-        if False:
-            pass
-        
         X = (X + X.T)/2
         # update Y
         Y = Y + mu * (X - Q)
@@ -55,7 +52,7 @@ def matchSVT(M_aff, dimGroups, M_constr=None, M_obs=None, control={}):
 
         if pRes < tol and dRes < tol:
             break
-        
+
         if pRes > 10 * dRes:
             mu = 2 * mu
         elif dRes > 10 * pRes:

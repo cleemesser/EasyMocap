@@ -94,7 +94,7 @@ def parse_parser(parser):
     args = parser.parse_args()
     if args.out is None:
         print(' - [Warning] Please specify the output path `--out ${out}`')
-        print(' - [Warning] Default to {}/output'.format(args.path))
+        print(f' - [Warning] Default to {args.path}/output')
         args.out = join(args.path, 'output')
     if args.from_file is not None:
         assert os.path.exists(args.from_file), args.from_file
@@ -103,10 +103,7 @@ def parse_parser(parser):
             subs = [d for d in datas if not d.startswith('#')]
             subs = [d.rstrip().replace('https://www.youtube.com/watch?v=', '') for d in subs]
         newsubs = sorted(os.listdir(join(args.path, 'images')))
-        clips = []
-        for newsub in newsubs:
-            if newsub.split('+')[0] in subs:
-                clips.append(newsub)
+        clips = [newsub for newsub in newsubs if newsub.split('+')[0] in subs]
         for sub in subs:
             if os.path.exists(join(args.path, 'images', sub)):
                 clips.append(sub)

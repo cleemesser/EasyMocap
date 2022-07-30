@@ -17,10 +17,10 @@ def run(cmd):
     os.system(cmd)
 
 def extract_images(path, ffmpeg, image):
-    videos = sorted(sum([
-        glob(join(path, 'videos', '*'+ext)) for ext in extensions
-        ], [])
+    videos = sorted(
+        sum((glob(join(path, 'videos', f'*{ext}')) for ext in extensions), [])
     )
+
     for videoname in videos:
         sub = '.'.join(os.path.basename(videoname).split('.')[:-1])
         sub = sub.replace(args.strip, '')
@@ -28,11 +28,11 @@ def extract_images(path, ffmpeg, image):
         os.makedirs(outpath, exist_ok=True)
         other_cmd = ''
         if args.num != -1:
-            other_cmd += '-vframes {}'.format(args.num)
+            other_cmd += f'-vframes {args.num}'
         if args.transpose != -1:
-            other_cmd += '-vf transpose={}'.format(args.transpose)
-        cmd = '{} -i {} {} -q:v 1 -start_number 0 {}/%06d.jpg'.format(
-            ffmpeg, videoname, other_cmd, outpath)
+            other_cmd += f'-vf transpose={args.transpose}'
+        cmd = f'{ffmpeg} -i {videoname} {other_cmd} -q:v 1 -start_number 0 {outpath}/%06d.jpg'
+
         run(cmd)
 
 if __name__ == "__main__":

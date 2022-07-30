@@ -37,8 +37,7 @@ def batch_rodrigues(rot_vecs, epsilon=1e-8, dtype=torch.float32):
         .view((batch_size, 3, 3))
 
     ident = torch.eye(3, dtype=dtype, device=device).unsqueeze(dim=0)
-    rot_mat = ident + sin * K + (1 - cos) * torch.bmm(K, K)
-    return rot_mat
+    return ident + sin * K + (1 - cos) * torch.bmm(K, K)
 
 def projection(points3d, camera_intri, R=None, T=None, distance=None):
     """ project the 3d points to camera coordinate
@@ -59,7 +58,7 @@ def projection(points3d, camera_intri, R=None, T=None, distance=None):
             points3d = torch.matmul(points3d, Rt) + Tt
         else:
             points3d = torch.matmul(points3d, Rt) + T
-    
+
     if distance is None:
         img_points = torch.div(points3d[:, :, :2],
                                points3d[:, :, 2:3])

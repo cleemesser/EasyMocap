@@ -28,34 +28,30 @@ def save_json(file, data):
 tobool = lambda x: 'true' if x else 'false'
 
 def annot2string(data):
-    out_text = []
-    out_text.append('{\n')
+    out_text = ['{\n']
     keysbase = ['filename', 'height', 'width', 'annots', 'isKeyframe']
     keys_other = [key for key in data.keys() if key not in keysbase]
+    indent = 4
     for key in keysbase[:-1] + keys_other + ['isKeyframe']:
         value = data[key]
-        indent = 4
         if key != 'annots':
             if isinstance(value, str):
-                res = '"{}": "{}",'.format(key, value)
+                res = f'"{key}": "{value}",'
             elif isinstance(value, bool):
-                res = '"{}": {}'.format(key, tobool(value))
-            elif isinstance(value, int):
-                res = '"{}": {},'.format(key, value)
-            elif isinstance(value, np.ndarray):
+                res = f'"{key}": {tobool(value)}'
+            elif isinstance(value, int) or not isinstance(value, np.ndarray):
+                res = f'"{key}": {value},'
+            else:
                 #TODO: pretty array
                 res = '"{}": {},'.format(key, myarray2string(value, indent=0))
-            else:
-                res = '"{}": {},'.format(key, value)
             out_text.append(indent * ' ' + res+'\n')
         else:
             out_text.append(indent * ' ' + '"annots": [\n')
+            head = (indent + 4) * " " + "{\n"
             for n, annot in enumerate(value):
-                head = (indent + 4) * " " + "{\n"
                 ind = (indent + 8) * " "
-                pid = ind + '"personID": {},\n'.format(annot['personID'])
-                out_text.append(head)
-                out_text.append(pid)
+                pid = ind + f""""personID": {annot['personID']},\n"""
+                out_text.extend((head, pid))
                 for bkey in ['bbox', 'bbox_handl2d', 'bbox_handr2d', 'bbox_face2d']:
                     if bkey not in annot.keys():
                         continue
@@ -68,16 +64,13 @@ def annot2string(data):
                     conf = val[:, -1]
                     conf[conf<0] = 0
                     ret = myarray2string(val, fmt='%7.2f', indent=12)
-                    kpts = ind + '"{}": '.format(bkey) + ret + ',\n'
+                    kpts = ind + f'"{bkey}": ' + ret + ',\n'
                     out_text.append(kpts)
                 for rkey in ['isKeyframe']:
                     val = annot.get(rkey, False)
-                    bkey = ind + '"{}": {}\n'.format(rkey, tobool(val))
+                    bkey = ind + f'"{rkey}": {tobool(val)}\n'
                 tail = (indent + 4) * " " + "}"
-                if n == len(value) - 1:
-                    tail += '\n'
-                else:
-                    tail += ',\n'
+                tail += '\n' if n == len(value) - 1 else ',\n'
                 out_text.extend([bkey, tail])
             out_text.append(indent * ' ' + '],\n')
     out_text.append('}\n')

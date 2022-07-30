@@ -16,7 +16,7 @@ from ..mytools.reader import read_keypoints2d, read_keypoints3d
 from ..mytools.file_utils import read_annot, read_json, save_annot, save_json, write_keypoints3d
 
 def check_path(x):
-    assert os.path.exists(x), '{} not exists!'.format(x)
+    assert os.path.exists(x), f'{x} not exists!'
 
 class BaseTrack:
     def __init__(self, path, out, WINDOW_SIZE, MIN_FRAMES, SMOOTH_SIZE) -> None:
@@ -51,7 +51,7 @@ class BaseTrack:
         nFrames = len(results)
         WINDOW_SIZE = self.WINDOW_SIZE
         edges = {}
-        for start in tqdm(range(0, nFrames - 1), desc='affinity'):
+        for start in tqdm(range(nFrames - 1), desc='affinity'):
             window_size = min(WINDOW_SIZE, nFrames - start)
             results_window = results[start:start+window_size]
             dimGroups, frames = getDimGroups(results_window)
@@ -84,7 +84,7 @@ class BaseTrack:
             id1 = results[nf1][ni1]['id']
             if id0 == -1 and id1 == -1:
                 results[nf0][ni0]['id'] = maxid
-                log('Create person {}'.format(maxid))
+                log(f'Create person {maxid}')
                 frames_of_id[maxid] = {nf0:ni0, nf1:ni1}
                 maxid += 1
             # directly assign
@@ -101,22 +101,18 @@ class BaseTrack:
                 continue
             if id0 == id1:
                 continue
-            # merge
-            if id0 != id1:
-                common = frames_of_id[id0].keys() & frames_of_id[id1].keys()
-                for key in common: # conflict
-                    if frames_of_id[id0][key] == frames_of_id[id1][key]:
-                        pass
-                    else:
-                        break
-                else: # merge
-                    log('Merge {} to {}'.format(id1, id0))
-                    for key in frames_of_id[id1].keys():
-                        results[key][frames_of_id[id1][key]]['id'] = id0
-                        frames_of_id[id0][key] = frames_of_id[id1][key]
-                    frames_of_id.pop(id1)
-                    continue
-                log('Conflict; not merged')
+            common = frames_of_id[id0].keys() & frames_of_id[id1].keys()
+            for key in common: # conflict
+                if frames_of_id[id0][key] != frames_of_id[id1][key]:
+                    break
+            else: # merge
+                log(f'Merge {id1} to {id0}')
+                for key in frames_of_id[id1].keys():
+                    results[key][frames_of_id[id1][key]]['id'] = id0
+                    frames_of_id[id0][key] = frames_of_id[id1][key]
+                frames_of_id.pop(id1)
+                continue
+            log('Conflict; not merged')
         return results
     
     def reset_id(self, results):
@@ -147,7 +143,7 @@ class BaseTrack:
             if occupancy[pid].sum() > self.MIN_FRAMES:
                 pids.append(pid)
             else:
-                print('[track] remove {} with {} frames'.format(pid, occupancy[pid].sum()))
+                print(f'[track] remove {pid} with {occupancy[pid].sum()} frames')
         occupancy = occupancy[pids]
         for nf in range(nFrames):
             result = results[nf]
@@ -173,7 +169,7 @@ class BaseTrack:
                     right = right.min() + nf + 1
                 else:
                     continue
-                print('[interp] {} in [{}, {}]'.format(pid, left, right))
+                print(f'[interp] {pid} in [{left}, {right}]')
                 # find valid (left, right)
                 # interpolate 3d pose
                 info_left = [res for res in results[left] if res['id'] == pid][0]
@@ -210,7 +206,7 @@ class Track3D(BaseTrack):
             k2dpath = ''
             subs = []
         results = []
-        for nf, filename in enumerate(filenames):
+        for filename in filenames:
             basename = os.path.basename(filename)
             infos = read_keypoints3d(filename)
             for n, info in enumerate(infos):
@@ -220,7 +216,7 @@ class Track3D(BaseTrack):
             results.append(infos)
             if self.with2d:
                 # load 2d keypoints
-                for nv, sub in enumerate(subs):
+                for sub in subs:
                     k2dname = join(k2dpath, sub, basename)
                     annots = read_keypoints2d(k2dname, self.mode)
                     for annot in annots:
@@ -261,8 +257,7 @@ class Track3D(BaseTrack):
     
     def _interpolate(self, info_left, info_right, weight):
         kpts_new = info_left['keypoints3d'] * weight + info_right['keypoints3d'] * (1-weight)
-        res = {'keypoints3d': kpts_new}
-        return res
+        return {'keypoints3d': kpts_new}
 
 class Track2D(BaseTrack):
     def __init__(self, **cfg) -> None:
@@ -273,7 +268,7 @@ class Track2D(BaseTrack):
         results = []
         for filename in tqdm(filenames, desc='loading'):
             result = read_json(filename)['annots']
-            for n, info in enumerate(result):
+            for info in result:
                 info['id'] = -1
             results.append(result)
         return results
@@ -314,7 +309,7 @@ class Track2D(BaseTrack):
                 # 右边界的小值
                 xx2 = np.minimum(bbox_pre[..., 2], bbox_now[..., 2])
                 yy2 = np.minimum(bbox_pre[..., 3], bbox_now[..., 3])
-                
+
                 w = np.maximum(0.0, xx2 - xx1)
                 h = np.maximum(0.0, yy2 - yy1)
                 inter = w * h
@@ -338,11 +333,7 @@ class Track2D(BaseTrack):
                 kpts.append([0., 0., 0.])
             else:
                 kpts.append([kpts_l[nj][i]*weight + kpts_r[nj][i]*(1-weight) for i in range(3)])
-        res = {'bbox': bbox, 'keypoints': kpts}
-        return res
+        return {'bbox': bbox, 'keypoints': kpts}
     
     def smooth(self, results, occupancy):
-        for pid in range(occupancy.shape[0]):
-            # the occupancy must be continuous
-            pass
         return results, occupancy

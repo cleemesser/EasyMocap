@@ -5,6 +5,7 @@
   @ LastEditTime: 2021-06-28 10:32:24
   @ FilePath: /EasyMocapRelease/apps/demo/auto_track.py
 '''
+
 from easymocap.assignment.track import Track2D, Track3D
 
 if __name__ == "__main__":
@@ -22,8 +23,5 @@ if __name__ == "__main__":
         'MIN_FRAMES': 10,
         'SMOOTH_SIZE': 5
     }
-    if args.track3d:
-        tracker = Track3D(with2d=False, **cfg)
-    else:
-        tracker = Track2D(**cfg)
+    tracker = Track3D(with2d=False, **cfg) if args.track3d else Track2D(**cfg)
     tracker.auto_track()

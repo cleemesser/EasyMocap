@@ -27,14 +27,13 @@ class MV1PMF_Mirror(MVBase):
         self.verbose = False
 
     def __str__(self) -> str:
-        return 'Dataset for MultiMirror: {} views'.format(len(self.cams))
+        return f'Dataset for MultiMirror: {len(self.cams)} views'
     
     def write_keypoints3d(self, keypoints3d, nf):
-        results = []
         M = self.Mirror[0]
         pid = self.pid
         val = {'id': pid, 'keypoints3d': keypoints3d}
-        results.append(val)
+        results = [val]
         kpts = keypoints3d
         kpts3dm = (M[:3, :3] @ kpts[:, :3].T + M[:3, 3:]).T
         kpts3dm = np.hstack([kpts3dm, kpts[:, 3:]])
@@ -45,35 +44,45 @@ class MV1PMF_Mirror(MVBase):
 
     def write_smpl(self, params, nf):
         outname = join(self.out, 'smpl', '{:06d}.json'.format(nf))
-        results = []
         M = self.Mirror[0]
         pid = self.pid
         val = {'id': pid}
-        val.update(params)
-        results.append(val)
+        val |= params
+        results = [val]
         # 增加镜子里的人的
         val = {'id': pid + 1}
-        val.update(flipSMPLParams(params, self.mirror))
+        val |= flipSMPLParams(params, self.mirror)
         results.append(val)
         self.writer.write_smpl(results, outname)
 
     def vis_smpl(self, vertices, faces, images, nf, sub_vis=[], 
         mode='smpl', extra_data=[], add_back=True):
         outname = join(self.out, 'smpl', '{:06d}.jpg'.format(nf))
-        render_data = {}
         if len(vertices.shape) == 3:
             vertices = vertices[0]
         pid = self.pid
-        render_data[pid] = {'vertices': vertices, 'faces': faces, 
-            'vid': pid, 'name': 'human_{}_{}'.format(nf, pid)}
+        render_data = {
+            pid: {
+                'vertices': vertices,
+                'faces': faces,
+                'vid': pid,
+                'name': f'human_{nf}_{pid}',
+            }
+        }
+
         vertices_m = mirrorPoint3D(vertices, self.Mirror[0])
-        render_data[pid+1] = {'vertices': vertices_m, 'faces': faces, 
-            'vid': pid, 'name': 'human_mirror_{}_{}'.format(nf, pid)}
-        
+        render_data[pid + 1] = {
+            'vertices': vertices_m,
+            'faces': faces,
+            'vid': pid,
+            'name': f'human_mirror_{nf}_{pid}',
+        }
+
+
         cameras = {'K': [], 'R':[], 'T':[]}
         if len(sub_vis) == 0:
             sub_vis = self.cams
-        for key in cameras.keys():
+        for key in cameras:
             cameras[key] = [self.cameras[cam][key] for cam in sub_vis]
         images = [images[self.cams.index(cam)] for cam in sub_vis]
         self.writer.vis_smpl(render_data, images, cameras, outname, add_back=add_back)
@@ -123,8 +132,7 @@ class MV1PMF_Mirror(MVBase):
 
     @property
     def Mirror(self):
-        M = calc_mirror_transform(self.mirror)
-        return M
+        return calc_mirror_transform(self.mirror)
 
     @property
     def Pall(self):
@@ -179,11 +187,7 @@ class ImageFolderMirror(ImageFolder):
                 normal = normal.T / np.linalg.norm(normal)
                 normals.append(normal)
         # nFrames, 1, 3
-        if len(normals) > 0:
-            normals = np.stack(normals)
-        else:
-            normals = None
+        normals = np.stack(normals) if normals else None
         return normals
 
-if __name__ == "__main__":
-    pass
+pass

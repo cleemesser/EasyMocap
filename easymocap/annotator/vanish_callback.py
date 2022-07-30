@@ -12,10 +12,12 @@ def clear_body_points(self, param):
     "remove vanish lines of body"
     annots = param['annots']
     for i in range(3):
-        vanish_lines = []
-        for data in annots['vanish_line'][i]:
-            if data[0][-1] > 1 and data[1][-1] > 1:
-                vanish_lines.append(data)
+        vanish_lines = [
+            data
+            for data in annots['vanish_line'][i]
+            if data[0][-1] > 1 and data[1][-1] > 1
+        ]
+
         annots['vanish_line'][i] = vanish_lines
         if len(vanish_lines) > 1:
             annots['vanish_point'][i] = update_vanish_points(vanish_lines)
@@ -25,11 +27,13 @@ def calc_vanishpoint(keypoints2d, thres=0.3):
     '''
         keypoints2d: (2, N, 3)
     '''
-    valid_idx = []
-    for nj in range(keypoints2d.shape[1]):
-        if keypoints2d[0, nj, 2] > thres and keypoints2d[1, nj, 2] > thres:
-            valid_idx.append(nj)
-    assert len(valid_idx) > 0, 'ATTN: cannot calculate the mirror pose'
+    valid_idx = [
+        nj
+        for nj in range(keypoints2d.shape[1])
+        if keypoints2d[0, nj, 2] > thres and keypoints2d[1, nj, 2] > thres
+    ]
+
+    assert valid_idx, 'ATTN: cannot calculate the mirror pose'
 
     keypoints2d = keypoints2d[:, valid_idx]
     # weight: (N, 1)
@@ -78,9 +82,10 @@ def get_record_vanish_lines(index):
                     val[0].append(CONF_VANISHING_ANNOT)
                     val[1].append(CONF_VANISHING_ANNOT)
             annots['vanish_point'][index] = update_vanish_points(annots['vanish_line'][index])
+
     func = record_vanish_lines
     text = ['parallel to mirror edges', 'vertical to mirror', 'vertical to ground']
-    func.__doc__ = 'vanish line of ' + text[index]
+    func.__doc__ = f'vanish line of {text[index]}'
     return record_vanish_lines
 
 def vanish_point_from_body(self, param, **kwargs):
@@ -112,10 +117,12 @@ def copy_edges(self, param, **kwargs):
     vanish_lines_pre = previous['vanish_line']
     vanish_lines = param['annots']['vanish_line']
     for i in range(3):
-        vanish_lines[i] = []
-        for data in vanish_lines_pre[i]:
-            if data[0][-1] > 1 and data[1][-1] > 1:
-                vanish_lines[i].append(data)
+        vanish_lines[i] = [
+            data
+            for data in vanish_lines_pre[i]
+            if data[0][-1] > 1 and data[1][-1] > 1
+        ]
+
         if len(vanish_lines[i]) > 1:
             annots['vanish_point'][i] = update_vanish_points(vanish_lines[i])
 

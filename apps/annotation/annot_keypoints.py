@@ -48,8 +48,8 @@ class Estimator:
         pid = annots['personID']
         previous = annotator.previous()
         found = [d for d in previous['annots'] if d['personID'] == pid]
-        if len(found) == 0:
-            print('[Info] Not found {} in previous frame'.format(pid))
+        if not found:
+            print(f'[Info] Not found {pid} in previous frame')
             return 0
         keypoints = np.array(found[0]['keypoints'])[None]
         bboxes = [annots['bbox']]

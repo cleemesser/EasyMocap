@@ -8,7 +8,7 @@ def check_result(image_root, annot_root):
         # check the number of images and keypoints
         nimg = len(os.listdir(image_root))
         nann = len(os.listdir(annot_root))
-        print('Check {} == {}'.format(nimg, nann))
+        print(f'Check {nimg} == {nann}')
         if nimg == nann:
             return True
     return False

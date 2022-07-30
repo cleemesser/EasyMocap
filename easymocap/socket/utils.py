@@ -24,5 +24,4 @@ def encode_image(image):
     #frame을 binary 형태로 변환 jpg로 decoding
     result, img_encode = cv2.imencode('.jpg', image, fourcc)
     data = np.array(img_encode) # numpy array로 안바꿔주면 ERROR
-    stringData = data.tostring()
-    return stringData
+    return data.tostring()

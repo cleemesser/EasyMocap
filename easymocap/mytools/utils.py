@@ -23,9 +23,11 @@ class Timer:
     @classmethod
     def report(cls):
         header = ['', 'Time(ms)']
-        contents = []
-        for key, val in cls.records.items():
-            contents.append(['{:20s}'.format(key), '{:.2f}'.format(sum(val)/len(val))])
+        contents = [
+            ['{:20s}'.format(key), '{:.2f}'.format(sum(val) / len(val))]
+            for key, val in cls.records.items()
+        ]
+
         print(tabulate.tabulate(contents, header, tablefmt='fancy_grid'))
     
     def __init__(self, name, silent=False):

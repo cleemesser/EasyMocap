@@ -24,7 +24,6 @@ def flipPoint2D(point):
         return point[..., FLIP_BODY25[:15], :]
     elif point.shape[-2] == 6890:
         return point[..., FLIP_SMPL_VERTICES, :]
-        import ipdb; ipdb.set_trace()
     elif point.shape[-1] == 67:
         import ipdb; ipdb.set_trace()
 
@@ -46,7 +45,7 @@ _PERMUTATION = {
     ]
 }
 PERMUTATION = {}
-for key in _PERMUTATION.keys():
+for key in _PERMUTATION:
     res = []
     for i in _PERMUTATION[key]:
         res.extend([3*i + j for j in range(3)])

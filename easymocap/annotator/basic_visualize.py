@@ -34,10 +34,10 @@ def capture_screen(img, capture_screen=False, **kwargs):
     if capture_screen:
         from datetime import datetime
         time_now = datetime.now().strftime("%m-%d-%H:%M:%S")
-        outname = join('capture', time_now+'.jpg')
+        outname = join('capture', f'{time_now}.jpg')
         os.makedirs('capture', exist_ok=True)
         cv2.imwrite(outname, img)
-        print('Capture current screen to {}'.format(outname))
+        print(f'Capture current screen to {outname}')
     return img
 
 def plot_text(img, annots, imgname, **kwargs):
@@ -50,9 +50,18 @@ def plot_text(img, annots, imgname, **kwargs):
     text_size = int(max(1, img.shape[0]//1500))
     border = 20 * text_size
     width = 2 * text_size
-    cv2.putText(img, '{}'.format(imgname), (border, img.shape[0]-border), cv2.FONT_HERSHEY_SIMPLEX, text_size, (0, 0, 255), width)
+    cv2.putText(
+        img,
+        f'{imgname}',
+        (border, img.shape[0] - border),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        text_size,
+        (0, 0, 255),
+        width,
+    )
+
     # 显示标注进度条:
-    if 'frame' in kwargs.keys():
+    if 'frame' in kwargs:
         width = img.shape[1]
         frame, nFrames = kwargs['frame'], kwargs['nFrames']
         lw = 12
@@ -86,7 +95,16 @@ def plot_bbox_body(img, annots, **kwargs):
             (int((x1+x2)/2-w), int((y1+y2)/2-w*ratio)), 
             (int((x1+x2)/2+w), int((y1+y2)/2+w*ratio)), 
             color, -1)
-        cv2.putText(img, '{}'.format(pid), (int(x1), int(y1)+20), cv2.FONT_HERSHEY_SIMPLEX, 5, color, 2)
+        cv2.putText(
+            img,
+            f'{pid}',
+            (int(x1), int(y1) + 20),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            5,
+            color,
+            2,
+        )
+
     return img
 
 def plot_bbox_sp(img, annots, bbox_type='handl_bbox', add_center=False):
@@ -111,7 +129,16 @@ def plot_bbox_sp(img, annots, bbox_type='handl_bbox', add_center=False):
                 (int((x1+x2)/2-w), int((y1+y2)/2-w*ratio)),
                 (int((x1+x2)/2+w), int((y1+y2)/2+w*ratio)),
                 color, -1)
-        cv2.putText(img, '{}'.format(pid), (int(x1), int(y1)+20), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+        cv2.putText(
+            img,
+            f'{pid}',
+            (int(x1), int(y1) + 20),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            color,
+            2,
+        )
+
     return img
 
 def plot_bbox_factory(bbox_type, add_center=False):
@@ -151,13 +178,12 @@ def vis_active_bbox(img, annots, select, bbox_name, **kwargs):
     active = select[bbox_name]
     if active == -1 or active >= len(annots['annots']):
         return img
-    else:
-        bbox = annots['annots'][active][bbox_name]
-        pid = annots['annots'][active]['personID']
-        mask = np.zeros_like(img, dtype=np.uint8)
-        cv2.rectangle(mask, 
-            (int(bbox[0]), int(bbox[1])), 
-            (int(bbox[2]), int(bbox[3])), 
-            get_rgb(pid), -1)
-        img = cv2.addWeighted(img, 0.6, mask, 0.4, 0)
+    bbox = annots['annots'][active][bbox_name]
+    pid = annots['annots'][active]['personID']
+    mask = np.zeros_like(img, dtype=np.uint8)
+    cv2.rectangle(mask, 
+        (int(bbox[0]), int(bbox[1])), 
+        (int(bbox[2]), int(bbox[3])), 
+        get_rgb(pid), -1)
+    img = cv2.addWeighted(img, 0.6, mask, 0.4, 0)
     return img

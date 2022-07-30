@@ -11,8 +11,7 @@ from .matchSVT import matchSVT
 
 def getDimGroups(lDetections):
     dimGroups = [0]
-    for data in lDetections:
-        dimGroups.append(dimGroups[-1] + len(data))
+    dimGroups.extend(dimGroups[-1] + len(data) for data in lDetections)
     views = np.zeros(dimGroups[-1], dtype=np.int)
     for nv in range(len(dimGroups) - 1):
         views[dimGroups[nv]:dimGroups[nv+1]] = nv
@@ -49,9 +48,7 @@ class ComposedAffinity:
 
     def __call__(self, annots, images=None):
         dimGroups, maptoview = getDimGroups(annots)
-        out = {}
-        for key, model in self.affinity.items():
-            out[key] = model(annots, dimGroups)
+        out = {key: model(annots, dimGroups) for key, model in self.affinity.items()}
         aff = composeAff(out, self.cfg.vis_aff)
         constrain = SimpleConstrain(dimGroups)
         observe = np.ones_like(aff)

@@ -19,9 +19,7 @@ def read_chess(chessname):
     data = read_json(chessname)
     k3d = np.array(data['keypoints3d'], dtype=np.float32)
     k2d = np.array(data['keypoints2d'], dtype=np.float32)
-    if k2d[:, -1].sum() < 0.01:
-        return False, k2d, k3d
-    return True, k2d, k3d
+    return (False, k2d, k3d) if k2d[:, -1].sum() < 0.01 else (True, k2d, k3d)
 
 def calib_intri_share(path, step):
     camnames = sorted(os.listdir(join(path, 'images')))
@@ -85,7 +83,7 @@ def calib_intri_share(path, step):
 def calib_intri(path, step):
     camnames = sorted(os.listdir(join(path, 'images')))
     cameras = {}
-    for ic, cam in enumerate(camnames):
+    for cam in camnames:
         imagenames = sorted(glob(join(path, 'images', cam, '*.jpg')))
         chessnames = sorted(glob(join(path, 'chessboard', cam, '*.json')))
         k3ds, k2ds = [], []

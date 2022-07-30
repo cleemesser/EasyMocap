@@ -55,5 +55,4 @@ def create_bbox(min_bound=(-3., -3., 0), max_bound=(3., 3., 2), flip=False):
         max_bound_ = max_bound.copy()
         min_bound = [min_bound_[0], -max_bound_[1], -max_bound_[2]]
         max_bound = [max_bound_[0], -min_bound_[1], -min_bound_[2]]
-    bbox = o3d.geometry.AxisAlignedBoundingBox(min_bound, max_bound)
-    return bbox
+    return o3d.geometry.AxisAlignedBoundingBox(min_bound, max_bound)
